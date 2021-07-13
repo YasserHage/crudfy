@@ -39,6 +39,11 @@
 			<artifactId>jackson-databind</artifactId>
 			<version>LATEST</version>
 		</dependency>
+		<dependency>
+			<groupId>com.github.javaparser</groupId>
+			<artifactId>javaparser-symbol-solver-core</artifactId>
+			<version>LATEST</version>
+		</dependency>
 	</dependencies>
 
 	<build>
