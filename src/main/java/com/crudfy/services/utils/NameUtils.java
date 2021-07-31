@@ -21,6 +21,26 @@ public class NameUtils {
         return getBaseClassName(projectName) + "Resource";
     }
 
+    public String getResourceVariableName(String projectName) {
+        return projectName + "Resource";
+    }
+
+    public String getControllerClassName(String projectName) {
+        return getBaseClassName(projectName) + "Controller";
+    }
+
+    public String getRootImportPath(String projectName) {
+        return String.format("com.%s", projectName);
+    }
+
+    public String getResponseImportPath(String projectName) {
+        return  getRootImportPath(projectName) + ".domains." + getResponseClassName(projectName);
+    }
+
+    public String getResourceImportPath(String projectName) {
+        return  getRootImportPath(projectName) + ".domains." + getResourceClassName(projectName);
+    }
+
     public String getMainRootPath(String basePath, String projectName) {
         return String.format("%s/src/main/java/com/%s", basePath, projectName);
     }

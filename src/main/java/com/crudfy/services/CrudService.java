@@ -3,7 +3,7 @@ package com.crudfy.services;
 import com.crudfy.domains.ComponentResource;
 import com.crudfy.domains.Field;
 import com.crudfy.services.utils.NameUtils;
-import com.github.javaparser.JavaParser;
+import com.crudfy.services.utils.TypeUtils;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.NodeList;
@@ -15,8 +15,7 @@ import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.ExpressionStmt;
-import com.github.javaparser.ast.type.ClassOrInterfaceType;
-import com.github.javaparser.ast.type.Type;
+import com.github.javaparser.ast.type.VoidType;
 import org.apache.maven.model.*;
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +35,13 @@ public class CrudService {
     private DomainBuilder domainBuilder;
 
     @Autowired
+    private ControllerBuilder controllerBuilder;
+
+    @Autowired
     private NameUtils nameUtils;
+
+    @Autowired
+    private TypeUtils typeUtils;
 
     public void createProject(ComponentResource resource) {
         String basePath = resource.getPath();
@@ -44,14 +49,21 @@ public class CrudService {
 
         createBaseProject(basePath, projectName);
         createDomainClasses(basePath, projectName, resource.getFields());
+        createControllerClasses(basePath, projectName, resource.getFields());
     }
 
     private void createDomainClasses(String basePath, String projectName, List<Field> fields) {
-        String domainPath = nameUtils.getDomainPath(basePath, projectName);
 
+        String domainPath = nameUtils.getDomainPath(basePath, projectName);
         domainBuilder.buildResponse(domainPath, projectName, fields);
         domainBuilder.buildResource(domainPath, projectName, fields);
         domainBuilder.buildEntity(domainPath, projectName, fields);
+    }
+
+    private void createControllerClasses(String basePath, String projectName, List<Field> fields) {
+
+        String controllerPath = nameUtils.getControllerPath(basePath, projectName);
+        controllerBuilder.buildController(controllerPath, projectName);
     }
 
     private void createBaseProject(String basePath, String projectName) {
@@ -69,13 +81,8 @@ public class CrudService {
 
     private void createMainClass(String basePath, String projectName) {
 
-        JavaParser parser = new JavaParser();
         CompilationUnit compilationUnit = new CompilationUnit();
         String className = nameUtils.getMainClassName(projectName);
-
-        //Types
-        Type voidType = parser.parseType("void").getResult().get();
-        ClassOrInterfaceType mainType = parser.parseClassOrInterfaceType(className).getResult().get();
 
         //Class and Package
         compilationUnit.setPackageDeclaration("com." + projectName);
@@ -90,12 +97,12 @@ public class CrudService {
 
         //Method Block
         BlockStmt blockStmt = new BlockStmt();
-        Expression run = new MethodCallExpr(new NameExpr("SpringApplication"), "run", new NodeList<>(new ClassExpr(mainType), new NameExpr("args")));
+        Expression run = new MethodCallExpr(new NameExpr("SpringApplication"), "run", new NodeList<>(new ClassExpr(typeUtils.getClassOrInterfaceType(className)), new NameExpr("args")));
         blockStmt.addStatement(new ExpressionStmt(run));
 
         //Method
         MethodDeclaration getTest = mainClass.addMethod("main", Modifier.Keyword.PUBLIC, Modifier.Keyword.STATIC).addParameter("String[]", "args");
-        getTest.setType(voidType);
+        getTest.setType(new VoidType());
         getTest.setBody(blockStmt);
 
         try {
