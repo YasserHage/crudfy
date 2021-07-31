@@ -2,6 +2,7 @@ package com.crudfy.services;
 
 import com.crudfy.domains.ComponentResource;
 import com.crudfy.domains.Field;
+import com.crudfy.services.utils.NameUtils;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
@@ -34,40 +35,43 @@ public class CrudService {
     @Autowired
     private DomainBuilder domainBuilder;
 
+    @Autowired
+    private NameUtils nameUtils;
+
     public void createProject(ComponentResource resource) {
-        String rootPath = String.format("%s/src/main/java/com/%s", resource.getPath(), resource.getName());
+        String basePath = resource.getPath();
         String projectName = resource.getName();
 
-        createBaseProject(projectName, resource.getPath(), rootPath);
-        createDomainClasses(projectName, rootPath + "/domains", resource.getFields());
+        createBaseProject(basePath, projectName);
+        createDomainClasses(basePath, projectName, resource.getFields());
     }
 
-    private void createDomainClasses(String projectName, String domainPath, List<Field> fields) {
-        domainBuilder.buildResponse(projectName, domainPath, fields);
-        domainBuilder.buildResource(projectName, domainPath, fields);
-        domainBuilder.buildEntity(projectName, domainPath, fields);
+    private void createDomainClasses(String basePath, String projectName, List<Field> fields) {
+        String domainPath = nameUtils.getDomainPath(basePath, projectName);
+
+        domainBuilder.buildResponse(domainPath, projectName, fields);
+        domainBuilder.buildResource(domainPath, projectName, fields);
+        domainBuilder.buildEntity(domainPath, projectName, fields);
     }
 
-    private void createBaseProject(String projectName, String basePath, String rootPath) {
+    private void createBaseProject(String basePath, String projectName) {
 
-        String resourcesPath = String.format("%s/src/main/resources", basePath);
+        new File(nameUtils.getResourcePath(basePath)).mkdirs();
+        new File(nameUtils.getControllerPath(basePath, projectName)).mkdirs();
+        new File(nameUtils.getServicePath(basePath, projectName)).mkdir();
+        new File(nameUtils.getDomainPath(basePath, projectName)).mkdir();
+        new File(nameUtils.getRepositoryPath(basePath, projectName)).mkdir();
+        new File(nameUtils.getTestRootPath(basePath, projectName)).mkdirs();
 
-        new File(resourcesPath).mkdirs();
-        new File(rootPath + "/controllers").mkdirs();
-        new File(rootPath + "/services").mkdir();
-        new File(rootPath + "/domains").mkdir();
-        new File(rootPath + "/repositories").mkdir();
-        new File(String.format("%s/src/test/java/com/%s", basePath, projectName)).mkdirs();
-
-        createMainClass(projectName, rootPath);
-        createPomFile(projectName, basePath);
+        createMainClass(basePath, projectName);
+        createPomFile(basePath, projectName);
     }
 
-    private void createMainClass(String projectName, String rootPath) {
+    private void createMainClass(String basePath, String projectName) {
 
         JavaParser parser = new JavaParser();
         CompilationUnit compilationUnit = new CompilationUnit();
-        String className = projectName.substring(0, 1).toUpperCase() + projectName.substring(1) + "Application";
+        String className = nameUtils.getMainClassName(projectName);
 
         //Types
         Type voidType = parser.parseType("void").getResult().get();
@@ -96,7 +100,7 @@ public class CrudService {
 
         try {
             //File Writing
-            FileWriter myWriter = new FileWriter(String.format("%s/%s.java", rootPath, className));
+            FileWriter myWriter = new FileWriter(String.format("%s/%s.java", nameUtils.getMainRootPath(basePath, projectName), className));
             myWriter.write(compilationUnit.toString());
             myWriter.close();
         } catch (IOException e) {
@@ -104,7 +108,7 @@ public class CrudService {
         }
     }
 
-    private void createPomFile(String projectName, String basePath) {
+    private void createPomFile(String basePath, String projectName) {
 
         Parent parent = new Parent();
         parent.setArtifactId("spring-boot-starter-parent");

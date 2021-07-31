@@ -1,7 +1,8 @@
 package com.crudfy.services;
 
 import com.crudfy.domains.Field;
-import com.crudfy.domains.ImportsMapper;
+import com.crudfy.services.utils.ImportsMapper;
+import com.crudfy.services.utils.NameUtils;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
@@ -20,9 +21,12 @@ public class DomainBuilder {
     @Autowired
     private ImportsMapper mapper;
 
-    public void buildResponse(String projectName, String domainPath, List<Field> fields) {
+    @Autowired
+    private NameUtils nameUtils;
 
-        String className = projectName.substring(0, 1).toUpperCase() + projectName.substring(1) + "Response";
+    public void buildResponse(String domainPath, String projectName, List<Field> fields) {
+
+        String className = nameUtils.getResponseClassName(projectName) ;
         CompilationUnit compilationUnit = addCommons(projectName, fields, className);
 
         try {
@@ -36,9 +40,9 @@ public class DomainBuilder {
 
     }
 
-    public void buildResource(String projectName, String domainPath, List<Field> fields) {
+    public void buildResource(String domainPath, String projectName, List<Field> fields) {
 
-        String className = projectName.substring(0, 1).toUpperCase() + projectName.substring(1) + "Resource";
+        String className = nameUtils.getResourceClassName(projectName);
         CompilationUnit compilationUnit = addCommons(projectName, fields, className);
 
         try {
@@ -51,9 +55,9 @@ public class DomainBuilder {
         }
     }
 
-    public void buildEntity(String projectName, String domainPath, List<Field> fields) {
+    public void buildEntity(String domainPath, String projectName, List<Field> fields) {
 
-        String className = projectName.substring(0, 1).toUpperCase() + projectName.substring(1);
+        String className = nameUtils.getBaseClassName(projectName);
         CompilationUnit compilationUnit = addCommons(projectName, fields, className);
 
         try {

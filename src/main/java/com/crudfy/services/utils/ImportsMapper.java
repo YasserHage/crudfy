@@ -1,4 +1,4 @@
-package com.crudfy.domains;
+package com.crudfy.services.utils;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ResourceLoader;
