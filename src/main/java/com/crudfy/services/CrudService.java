@@ -1,6 +1,7 @@
 package com.crudfy.services;
 
 import com.crudfy.domains.ComponentResource;
+import com.crudfy.domains.Field;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
@@ -18,7 +19,6 @@ import com.github.javaparser.ast.type.Type;
 import org.apache.maven.model.*;
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -31,16 +31,26 @@ import java.util.Properties;
 @Service
 public class CrudService {
 
+    @Autowired
+    private DomainBuilder domainBuilder;
+
     public void createProject(ComponentResource resource) {
-        createBaseProject(resource.getName(), resource.getPath());
+        String rootPath = String.format("%s/src/main/java/com/%s", resource.getPath(), resource.getName());
+        String projectName = resource.getName();
 
-
+        createBaseProject(projectName, resource.getPath(), rootPath);
+        createDomainClasses(projectName, rootPath + "/domains", resource.getFields());
     }
 
-    private void createBaseProject(String projectName, String basePath) {
+    private void createDomainClasses(String projectName, String domainPath, List<Field> fields) {
+        domainBuilder.buildResponse(projectName, domainPath, fields);
+        domainBuilder.buildResource(projectName, domainPath, fields);
+        domainBuilder.buildEntity(projectName, domainPath, fields);
+    }
+
+    private void createBaseProject(String projectName, String basePath, String rootPath) {
 
         String resourcesPath = String.format("%s/src/main/resources", basePath);
-        String rootPath = String.format("%s/src/main/java/com/%s", basePath, projectName);
 
         new File(resourcesPath).mkdirs();
         new File(rootPath + "/controllers").mkdirs();
@@ -157,7 +167,7 @@ public class CrudService {
             new MavenXpp3Writer().write( writer, model );
             writer.close();
         } catch (IOException e) {
-            throw new RuntimeException("Problema ao criar o arquivo pom.xml. Exceção:", e);
+            throw new RuntimeException("Problema ao criar o arquivo pom.xml", e);
         }
     }
 }
