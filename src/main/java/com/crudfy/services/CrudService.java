@@ -15,11 +15,18 @@ import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.ExpressionStmt;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
+import org.apache.maven.model.*;
+import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
 
 @Service
 public class CrudService {
@@ -32,19 +39,18 @@ public class CrudService {
 
     private void createBaseProject(String projectName, String basePath) {
 
+        String resourcesPath = String.format("%s/src/main/resources", basePath);
         String rootPath = String.format("%s/src/main/java/com/%s", basePath, projectName);
 
+        new File(resourcesPath).mkdirs();
         new File(rootPath + "/controllers").mkdirs();
         new File(rootPath + "/services").mkdir();
         new File(rootPath + "/domains").mkdir();
         new File(rootPath + "/repositories").mkdir();
-        new File(String.format("%s/src/main/resources/", basePath, projectName)).mkdirs();
         new File(String.format("%s/src/test/java/com/%s", basePath, projectName)).mkdirs();
-
 
         createMainClass(projectName, rootPath);
         createPomFile(projectName, basePath);
-        // Fazer application.properties
     }
 
     private void createMainClass(String projectName, String rootPath) {
@@ -90,5 +96,68 @@ public class CrudService {
 
     private void createPomFile(String projectName, String basePath) {
 
+        Parent parent = new Parent();
+        parent.setArtifactId("spring-boot-starter-parent");
+        parent.setGroupId("org.springframework.boot");
+        parent.setVersion("2.5.2");
+
+        Properties properties = new Properties();
+        properties.setProperty("java.version", "11");
+
+        List<Dependency> dependencies = new ArrayList<>();
+
+        Dependency springWeb = new Dependency();
+        springWeb.setGroupId("org.springframework.boot");
+        springWeb.setArtifactId("spring-boot-starter-web");
+        dependencies.add(springWeb);
+
+        Dependency springStarter = new Dependency();
+        springStarter.setGroupId("org.springframework.boot");
+        springStarter.setArtifactId("spring-boot-starter");
+        dependencies.add(springStarter);
+
+        Dependency lombok = new Dependency();
+        lombok.setGroupId("org.projectlombok");
+        lombok.setArtifactId("lombok");
+        dependencies.add(lombok);
+
+        Dependency springTest = new Dependency();
+        springTest.setGroupId("org.springframework.boot");
+        springTest.setArtifactId("spring-boot-starter-test");
+        springTest.setScope("test");
+        dependencies.add(springTest);
+
+        Plugin plugin = new Plugin();
+        plugin.setGroupId("org.springframework.boot");
+        plugin.setArtifactId("spring-boot-maven-plugin");
+        plugin.setVersion("${project.parent.version}");
+
+        List<Plugin> plugins = new ArrayList<>();
+        plugins.add(plugin);
+
+        Build build = new Build();
+        build.setPlugins(plugins);
+
+        Model model = new Model();
+        model.setModelVersion("4.0.0");
+        model.setParent(parent);
+        model.setGroupId( "some.group.id" );
+        model.setArtifactId(projectName);
+        model.setVersion("0.0.1-SNAPSHOT");
+        model.setName(projectName);
+        model.setDescription(projectName + " basic CRUD project (Made by CRUDFY)");
+        model.setProperties(properties);
+        model.setDependencies(dependencies);
+        model.setBuild(build);
+
+        try {
+            File file = new File(basePath + "\\pom.xml");
+            file.createNewFile();
+            FileWriter writer = new FileWriter(file);
+            new MavenXpp3Writer().write( writer, model );
+            writer.close();
+        } catch (IOException e) {
+            throw new RuntimeException("Problema ao criar o arquivo pom.xml. Exceção:", e);
+        }
     }
 }
