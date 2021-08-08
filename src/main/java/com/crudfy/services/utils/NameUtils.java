@@ -25,6 +25,14 @@ public class NameUtils {
         return projectName + "Resource";
     }
 
+    public String getRepositoryVariableName(String projectName) {
+        return projectName + "Repository";
+    }
+
+    public String getMapperVariableName(String projectName) {
+        return projectName + "Mapper";
+    }
+
     public String getControllerClassName(String projectName) {
         return getBaseClassName(projectName) + "Controller";
     }
@@ -32,6 +40,27 @@ public class NameUtils {
     public String getRepositoryClassName(String projectName) {
         return getBaseClassName(projectName) + "Repository";
     }
+
+    public String getServiceClassName(String projectName) {
+        return getBaseClassName(projectName) + "Service";
+    }
+
+    public String getMapperClassName(String projectName) {
+        return getBaseClassName(projectName) + "Mapper";
+    }
+
+    public String toEntityMethod(String projectName) {
+        return "to" + getBaseClassName(projectName);
+    }
+
+    public String toResponseMethod(String projectName) {
+        return "to" + getResponseClassName(projectName);
+    }
+
+    public String toResponseListMethod(String projectName) {
+        return "to" + getResponseClassName(projectName) + "List";
+    }
+
 
     public String getRootImportPath(String projectName) {
         return String.format("com.%s", projectName);
@@ -47,6 +76,10 @@ public class NameUtils {
 
     public String getEntityImportPath(String projectName) {
         return  getRootImportPath(projectName) + ".domains." + getBaseClassName(projectName);
+    }
+
+    public String getRepositoryImportPath(String projectName) {
+        return  getRootImportPath(projectName) + ".repositories." + getRepositoryClassName(projectName);
     }
 
     public String getMainRootPath(String basePath, String projectName) {

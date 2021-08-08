@@ -86,7 +86,7 @@ public class ControllerBuilder {
     private void addCreateMethod(ClassOrInterfaceDeclaration controllerClass, String projectName) {
 
         MethodDeclaration createMethod = controllerClass.addMethod("create", Modifier.Keyword.PUBLIC);
-        createMethod.setType(typeUtils.getResponseEntityType(nameUtils.getResponseClassName(projectName)));
+        createMethod.setType(typeUtils.getClassOrInterfaceType("ResponseEntity"));
         createMethod.addAnnotation("PostMapping");
         createMethod.addParameter(buildResourceParameter(projectName));
     }
@@ -94,7 +94,7 @@ public class ControllerBuilder {
     private void addUpdateMethod(ClassOrInterfaceDeclaration controllerClass, String projectName) {
 
         MethodDeclaration updateMethod = controllerClass.addMethod("update", Modifier.Keyword.PUBLIC);
-        updateMethod.setType(typeUtils.getResponseEntityType(nameUtils.getResponseClassName(projectName)));
+        updateMethod.setType(typeUtils.getClassOrInterfaceType("ResponseEntity"));
         updateMethod.addSingleMemberAnnotation("PutMapping", "\"/{id}\"" );
         updateMethod.addParameter(buildIdParameter());
         updateMethod.addParameter(buildResourceParameter(projectName));

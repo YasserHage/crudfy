@@ -25,7 +25,7 @@ public class RepositoryBuilder {
         ClassOrInterfaceDeclaration controllerClass = compilationUnit
                 .addInterface(interfaceName)
                 .setPublic(true)
-                .addExtendedType("CrudRepository<" + nameUtils.getBaseClassName(projectName) + ", Integer>");
+                .addExtendedType("CrudRepository<" + nameUtils.getBaseClassName(projectName) + ", String>");
 
         addImports(compilationUnit, projectName);
         addAnnotations(controllerClass);

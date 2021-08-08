@@ -41,6 +41,9 @@ public class CrudService {
     private RepositoryBuilder repositoryBuilder;
 
     @Autowired
+    private ServiceBuilder serviceBuilder;
+
+    @Autowired
     private NameUtils nameUtils;
 
     @Autowired
@@ -54,6 +57,14 @@ public class CrudService {
         createDomainClasses(basePath, projectName, resource.getFields());
         createRepositoryClasses(basePath, projectName);
         createControllerClasses(basePath, projectName, resource.getFields());
+        createServiceClasses(basePath, projectName);
+    }
+
+    private void createServiceClasses(String basePath, String projectName) {
+
+        String servicePath = nameUtils.getServicePath(basePath, projectName);
+        serviceBuilder.buildMapper(servicePath, projectName);
+        serviceBuilder.buildService(servicePath, projectName);
     }
 
     private void createRepositoryClasses(String basePath, String projectName) {
@@ -156,6 +167,12 @@ public class CrudService {
         lombok.setGroupId("org.projectlombok");
         lombok.setArtifactId("lombok");
         dependencies.add(lombok);
+
+        Dependency mapstruct = new Dependency();
+        mapstruct.setGroupId("org.mapstruct");
+        mapstruct.setArtifactId("mapstruct");
+        mapstruct.setVersion("LATEST");
+        dependencies.add(mapstruct);
 
         Dependency springTest = new Dependency();
         springTest.setGroupId("org.springframework.boot");
