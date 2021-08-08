@@ -1,10 +1,10 @@
 package com.crudfy.services;
 
+import com.crudfy.services.utils.ArgumentUtils;
 import com.crudfy.services.utils.NameUtils;
 import com.crudfy.services.utils.TypeUtils;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
-import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
@@ -19,7 +19,6 @@ import org.springframework.stereotype.Service;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Arrays;
 
 @Service
 public class ServiceBuilder {
@@ -29,6 +28,9 @@ public class ServiceBuilder {
 
     @Autowired
     private TypeUtils typeUtils;
+
+    @Autowired
+    private ArgumentUtils argumentUtils;
 
     public void buildMapper(String servicePath, String projectName) {
 
@@ -170,20 +172,19 @@ public class ServiceBuilder {
 
         ClassOrInterfaceType optionalResponse = typeUtils.getClassOrInterfaceType(String.format("Optional<%s>", nameUtils.getResponseClassName(projectName)));
         ClassOrInterfaceType optionalEntity = typeUtils.getClassOrInterfaceType(String.format("Optional<%s>", nameUtils.getBaseClassName(projectName)));
-        NodeList idArgument = new NodeList(Arrays.asList((new NameExpr("id"))));
-        NodeList entityArgument = new NodeList(Arrays.asList(new MethodCallExpr(new NameExpr(projectName), "get")));
-        NodeList toResponse = new NodeList(Arrays.asList(new MethodCallExpr(
-                new NameExpr(nameUtils.getMapperVariableName(projectName)),
-                nameUtils.toResponseMethod(projectName),
-                entityArgument)));
 
         VariableDeclarator entityDeclaration = new VariableDeclarator(
                 optionalEntity,
                 projectName,
-                new MethodCallExpr(new NameExpr(nameUtils.getRepositoryVariableName(projectName)), "findById", idArgument));
+                new MethodCallExpr(new NameExpr(nameUtils.getRepositoryVariableName(projectName)), "findById", argumentUtils.buildNameArgument("id")));
 
+        MethodCallExpr getExpr = new MethodCallExpr(new NameExpr(projectName), "get");
+        MethodCallExpr toResponse =  new MethodCallExpr(
+                new NameExpr(nameUtils.getMapperVariableName(projectName)),
+                nameUtils.toResponseMethod(projectName),
+                argumentUtils.buildArguments(getExpr));
         MethodCallExpr isPresent = new MethodCallExpr(new NameExpr(projectName), "isPresent");
-        MethodCallExpr toOptional = new MethodCallExpr(new NameExpr("Optional"),"of", toResponse);
+        MethodCallExpr toOptional = new MethodCallExpr(new NameExpr("Optional"),"of", argumentUtils.buildArguments(toResponse));
         MethodCallExpr empty = new MethodCallExpr(new NameExpr("Optional"), "empty");
 
         BlockStmt blockStmt = new BlockStmt();
@@ -200,20 +201,18 @@ public class ServiceBuilder {
 
         String variableName = projectName + "List";
 
-        NodeList entityArgument = new NodeList(Arrays.asList(new NameExpr(variableName)));
-        NodeList iterationArgument = new NodeList(Arrays.asList(new MethodReferenceExpr().setScope(new NameExpr(variableName)).setIdentifier("add")));
-
         VariableDeclarator listDeclaration = new VariableDeclarator(
                 typeUtils.getClassOrInterfaceType(String.format("List<%s>", nameUtils.getBaseClassName(projectName))),
                 variableName,
-                new NameExpr("new ArrayList<>()"));
+                new ObjectCreationExpr().setType(typeUtils.getClassOrInterfaceType("ArrayList")));
 
+        MethodReferenceExpr addExpr = new MethodReferenceExpr().setScope(new NameExpr(variableName)).setIdentifier("add");
         MethodCallExpr findAllExpr = new MethodCallExpr(new NameExpr(nameUtils.getRepositoryVariableName(projectName)), "findAll");
-        MethodCallExpr iterationFunction = new MethodCallExpr(findAllExpr, "forEach", iterationArgument);
+        MethodCallExpr iterationFunction = new MethodCallExpr(findAllExpr, "forEach", argumentUtils.buildArguments(addExpr));
 
         MethodCallExpr toResponse = new MethodCallExpr(new NameExpr(nameUtils.getMapperVariableName(projectName)),
                 nameUtils.toResponseListMethod(projectName),
-                entityArgument);
+                argumentUtils.buildNameArgument(variableName));
 
         BlockStmt blockStmt = new BlockStmt();
         blockStmt.addStatement(new VariableDeclarationExpr(listDeclaration));
@@ -227,26 +226,22 @@ public class ServiceBuilder {
 
     private void addSaveMethod(ClassOrInterfaceDeclaration serviceClass, String projectName) {
 
-        NodeList resourceArgument = new NodeList(Arrays.asList(new NameExpr(nameUtils.getResourceVariableName(projectName))));
-        NodeList entityArgument = new NodeList(Arrays.asList(new NameExpr(projectName)));
-        NodeList saveArgument = new NodeList(Arrays.asList(new MethodCallExpr(
-                new NameExpr(nameUtils.getRepositoryVariableName(projectName)),
-                "save",
-                entityArgument)));
-
         MethodCallExpr toEntity = new MethodCallExpr(
                 new NameExpr(nameUtils.getMapperVariableName(projectName)),
                 nameUtils.toEntityMethod(projectName),
-                resourceArgument);
-
+                argumentUtils.buildNameArgument(nameUtils.getResourceVariableName(projectName)));
         VariableDeclarator entityDeclaration = new VariableDeclarator(
                 typeUtils.getClassOrInterfaceType(nameUtils.getBaseClassName(projectName)),
                 projectName,
                 toEntity);
 
+        MethodCallExpr saveExpr = new MethodCallExpr(
+                new NameExpr(nameUtils.getRepositoryVariableName(projectName)),
+                "save",
+                argumentUtils.buildNameArgument(projectName));
         MethodCallExpr toResponse = new MethodCallExpr(new NameExpr(nameUtils.getMapperVariableName(projectName)),
                 nameUtils.toResponseMethod(projectName),
-                saveArgument);
+                argumentUtils.buildArguments(saveExpr));
 
         BlockStmt blockStmt = new BlockStmt();
         blockStmt.addStatement(new VariableDeclarationExpr(entityDeclaration));
@@ -260,9 +255,7 @@ public class ServiceBuilder {
 
     private void addDeleteMethod(ClassOrInterfaceDeclaration serviceClass, String projectName) {
 
-        NodeList idArgument = new NodeList(Arrays.asList((new NameExpr("id"))));
-
-        MethodCallExpr deleteExpr =  new MethodCallExpr(new NameExpr(nameUtils.getRepositoryVariableName(projectName)), "deleteById", idArgument);
+        MethodCallExpr deleteExpr =  new MethodCallExpr(new NameExpr(nameUtils.getRepositoryVariableName(projectName)), "deleteById", argumentUtils.buildNameArgument("id"));
 
         BlockStmt blockStmt = new BlockStmt();
         blockStmt.addStatement(deleteExpr);
