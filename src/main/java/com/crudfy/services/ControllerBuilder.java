@@ -44,7 +44,6 @@ public class ControllerBuilder {
         } catch (IOException e) {
             throw new RuntimeException("Erro na escrita da classe Controller", e);
         }
-
     }
 
     private void addImports(CompilationUnit compilationUnit, String projectName) {

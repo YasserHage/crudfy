@@ -29,6 +29,10 @@ public class NameUtils {
         return getBaseClassName(projectName) + "Controller";
     }
 
+    public String getRepositoryClassName(String projectName) {
+        return getBaseClassName(projectName) + "Repository";
+    }
+
     public String getRootImportPath(String projectName) {
         return String.format("com.%s", projectName);
     }
@@ -39,6 +43,10 @@ public class NameUtils {
 
     public String getResourceImportPath(String projectName) {
         return  getRootImportPath(projectName) + ".domains." + getResourceClassName(projectName);
+    }
+
+    public String getEntityImportPath(String projectName) {
+        return  getRootImportPath(projectName) + ".domains." + getBaseClassName(projectName);
     }
 
     public String getMainRootPath(String basePath, String projectName) {

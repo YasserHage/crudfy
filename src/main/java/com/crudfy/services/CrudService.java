@@ -38,6 +38,9 @@ public class CrudService {
     private ControllerBuilder controllerBuilder;
 
     @Autowired
+    private RepositoryBuilder repositoryBuilder;
+
+    @Autowired
     private NameUtils nameUtils;
 
     @Autowired
@@ -49,7 +52,14 @@ public class CrudService {
 
         createBaseProject(basePath, projectName);
         createDomainClasses(basePath, projectName, resource.getFields());
+        createRepositoryClasses(basePath, projectName);
         createControllerClasses(basePath, projectName, resource.getFields());
+    }
+
+    private void createRepositoryClasses(String basePath, String projectName) {
+
+        String repositoryPath = nameUtils.getRepositoryPath(basePath, projectName);
+        repositoryBuilder.buildRepository(repositoryPath, projectName);
     }
 
     private void createDomainClasses(String basePath, String projectName, List<Field> fields) {
@@ -126,6 +136,11 @@ public class CrudService {
         properties.setProperty("java.version", "11");
 
         List<Dependency> dependencies = new ArrayList<>();
+
+        Dependency dataJpa = new Dependency();
+        dataJpa.setGroupId("org.springframework.boot");
+        dataJpa.setArtifactId("spring-boot-starter-data-jpa");
+        dependencies.add(dataJpa);
 
         Dependency springWeb = new Dependency();
         springWeb.setGroupId("org.springframework.boot");
