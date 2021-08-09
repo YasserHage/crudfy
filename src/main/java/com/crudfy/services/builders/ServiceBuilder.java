@@ -65,6 +65,7 @@ public class ServiceBuilder extends ClassOrInterfaceBuilder{
                 "java.util.List",
                 "java.util.Optional",
                 "java.util.ArrayList",
+                "org.springframework.stereotype.Service",
                 "org.springframework.beans.factory.annotation.Autowired"
         ));
         addAnnotations(Arrays.asList("Service"));
