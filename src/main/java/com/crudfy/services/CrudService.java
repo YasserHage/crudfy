@@ -2,6 +2,10 @@ package com.crudfy.services;
 
 import com.crudfy.domains.ComponentResource;
 import com.crudfy.domains.Field;
+import com.crudfy.services.builders.ControllerBuilder;
+import com.crudfy.services.builders.DomainBuilder;
+import com.crudfy.services.builders.RepositoryBuilder;
+import com.crudfy.services.builders.ServiceBuilder;
 import com.crudfy.services.utils.NameUtils;
 import com.crudfy.services.utils.TypeUtils;
 import com.github.javaparser.ast.CompilationUnit;

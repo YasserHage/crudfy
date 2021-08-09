@@ -1,4 +1,4 @@
-package com.crudfy.services;
+package com.crudfy.services.builders;
 
 import com.crudfy.services.utils.ArgumentUtils;
 import com.crudfy.services.utils.NameUtils;
@@ -20,11 +20,10 @@ import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.FileWriter;
-import java.io.IOException;
+import java.util.Arrays;
 
 @Service
-public class ControllerBuilder {
+public class ControllerBuilder extends ClassOrInterfaceBuilder{
 
     @Autowired
     private NameUtils nameUtils;
@@ -37,42 +36,31 @@ public class ControllerBuilder {
 
     public void buildController(String controllerPath, String projectName) {
 
-        CompilationUnit compilationUnit = new CompilationUnit();
         String className = nameUtils.getControllerClassName(projectName) ;
+        CompilationUnit compilationUnit = initialize("com." + projectName + ".controllers", className, false);
+        ClassOrInterfaceDeclaration controllerClass = compilationUnit.getClassByName(className).get();
 
-        //Class and Package
-        compilationUnit.setPackageDeclaration("com." + projectName + ".controllers");
-        ClassOrInterfaceDeclaration controllerClass = compilationUnit.addClass(className).setPublic(true);
+        addImports(Arrays.asList(
+                nameUtils.getResourceImportPath(projectName),
+                nameUtils.getResponseImportPath(projectName),
+                nameUtils.getServiceImportPath(projectName),
+                "org.springframework.beans.factory.annotation.Autowired",
+                "org.springframework.web.bind.annotation.*",
+                "org.springframework.stereotype.Controller",
+                "org.springframework.http.ResponseEntity",
+                "org.springframework.http.HttpStatus",
+                "java.util.Optional",
+                "java.util.List"
+                ));
 
-        addImports(compilationUnit, projectName);
-        addAnnotations(controllerClass, projectName);
+        addControllerAnnotations(controllerClass, projectName);
         addFields(controllerClass, projectName);
         addMethods(controllerClass, projectName);
 
-        try {
-            //File Writing
-            FileWriter myWriter = new FileWriter(String.format("%s/%s.java", controllerPath, className));
-            myWriter.write(compilationUnit.toString());
-            myWriter.close();
-        } catch (IOException e) {
-            throw new RuntimeException("Erro na escrita da classe Controller", e);
-        }
+        write(controllerPath, "Erro na escrita da classe Controller");
     }
 
-    private void addImports(CompilationUnit compilationUnit, String projectName) {
-        compilationUnit.addImport(nameUtils.getResourceImportPath(projectName));
-        compilationUnit.addImport(nameUtils.getResponseImportPath(projectName));
-        compilationUnit.addImport(nameUtils.getServiceImportPath(projectName));
-        compilationUnit.addImport("org.springframework.http.HttpStatus");
-        compilationUnit.addImport("org.springframework.http.ResponseEntity");
-        compilationUnit.addImport("org.springframework.web.bind.annotation.*");
-        compilationUnit.addImport("org.springframework.stereotype.Controller");
-        compilationUnit.addImport("org.springframework.beans.factory.annotation.Autowired");
-        compilationUnit.addImport("java.util.List");
-        compilationUnit.addImport("java.util.Optional");
-    }
-
-    private void addAnnotations(ClassOrInterfaceDeclaration controllerClass, String projectName) {
+    private void addControllerAnnotations(ClassOrInterfaceDeclaration controllerClass, String projectName) {
         controllerClass.addAnnotation("Controller");
         controllerClass.addSingleMemberAnnotation("RequestMapping", "\"/" + projectName + "\"");
     }

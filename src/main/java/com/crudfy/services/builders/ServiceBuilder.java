@@ -1,4 +1,4 @@
-package com.crudfy.services;
+package com.crudfy.services.builders;
 
 import com.crudfy.services.utils.ArgumentUtils;
 import com.crudfy.services.utils.NameUtils;
@@ -17,11 +17,10 @@ import com.github.javaparser.ast.type.VoidType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.FileWriter;
-import java.io.IOException;
+import java.util.Arrays;
 
 @Service
-public class ServiceBuilder {
+public class ServiceBuilder extends ClassOrInterfaceBuilder{
 
     @Autowired
     private NameUtils nameUtils;
@@ -34,81 +33,49 @@ public class ServiceBuilder {
 
     public void buildMapper(String servicePath, String projectName) {
 
-        CompilationUnit compilationUnit = new CompilationUnit();
         String interfaceName = nameUtils.getMapperClassName(projectName) ;
 
-        //Interface and Package
-        compilationUnit.setPackageDeclaration("com." + projectName + ".services");
-        ClassOrInterfaceDeclaration mapperInterface = compilationUnit
-                .addInterface(interfaceName)
-                .setPublic(true);
+        CompilationUnit compilationUnit = initialize("com." + projectName + ".services", interfaceName, true);
+        ClassOrInterfaceDeclaration mapperInterface = compilationUnit.getInterfaceByName(interfaceName).get();
 
-        addMapperImports(compilationUnit, projectName);
+        addImports(Arrays.asList(
+                nameUtils.getResponseImportPath(projectName),
+                nameUtils.getResourceImportPath(projectName),
+                nameUtils.getEntityImportPath(projectName),
+                "java.util.List",
+                "org.mapstruct.Mapper"));
         addMapperAnnotations(mapperInterface);
         addMapperMethods(mapperInterface, projectName);
 
-        try {
-            //File Writing
-            FileWriter myWriter = new FileWriter(String.format("%s/%s.java", servicePath, interfaceName));
-            myWriter.write(compilationUnit.toString());
-            myWriter.close();
-        } catch (IOException e) {
-            throw new RuntimeException("Erro na escrita da interface Mapper", e);
-        }
+        write(servicePath, "Erro na escrita da interface Mapper");
     }
 
     public void buildService(String servicePath, String projectName) {
 
-        CompilationUnit compilationUnit = new CompilationUnit();
         String className = nameUtils.getServiceClassName(projectName) ;
 
-        //Interface and Package
-        compilationUnit.setPackageDeclaration("com." + projectName + ".services");
-        ClassOrInterfaceDeclaration serviceClass = compilationUnit
-                .addClass(className)
-                .setPublic(true);
+        CompilationUnit compilationUnit = initialize("com." + projectName + ".services", className, false);
+        ClassOrInterfaceDeclaration serviceClass = compilationUnit.getClassByName(className).get();
 
-        addServiceImports(compilationUnit, projectName);
-        addServiceAnnotations(serviceClass);
+        addImports(Arrays.asList(
+                nameUtils.getEntityImportPath(projectName),
+                nameUtils.getResourceImportPath(projectName),
+                nameUtils.getResponseImportPath(projectName),
+                nameUtils.getRepositoryImportPath(projectName),
+                "java.util.List",
+                "java.util.Optional",
+                "java.util.ArrayList",
+                "org.springframework.beans.factory.annotation.Autowired"
+        ));
+        addAnnotations(Arrays.asList("Service"));
         addFields(serviceClass, projectName);
         addServiceMethods(serviceClass, projectName);
 
-        try {
-            //File Writing
-            FileWriter myWriter = new FileWriter(String.format("%s/%s.java", servicePath, className));
-            myWriter.write(compilationUnit.toString());
-            myWriter.close();
-        } catch (IOException e) {
-            throw new RuntimeException("Erro na escrita da interface Mapper", e);
-        }
-    }
-
-    private void addImportCommons(CompilationUnit compilationUnit, String projectName) {
-        compilationUnit.addImport(nameUtils.getResponseImportPath(projectName));
-        compilationUnit.addImport(nameUtils.getResourceImportPath(projectName));
-        compilationUnit.addImport(nameUtils.getEntityImportPath(projectName));
-        compilationUnit.addImport("java.util.List");
-    }
-
-    private void addMapperImports(CompilationUnit compilationUnit, String projectName) {
-        addImportCommons(compilationUnit, projectName);
-        compilationUnit.addImport("org.mapstruct.Mapper");
-    }
-
-    private void addServiceImports(CompilationUnit compilationUnit, String projectName) {
-        addImportCommons(compilationUnit, projectName);
-        compilationUnit.addImport(nameUtils.getRepositoryImportPath(projectName));
-        compilationUnit.addImport("java.util.Optional");
-        compilationUnit.addImport("java.util.ArrayList");
-        compilationUnit.addImport("org.springframework.beans.factory.annotation.Autowired");
+        write(servicePath, "Erro na escrita da classe Service");
     }
 
     private void addMapperAnnotations(ClassOrInterfaceDeclaration mapperInterface) {
         mapperInterface.addAnnotation(new NormalAnnotationExpr().addPair("componentModel", "\"spring\"").setName("Mapper"));
-    }
-
-    private void addServiceAnnotations(ClassOrInterfaceDeclaration mapperInterface) {
-        mapperInterface.addAnnotation("Service");
     }
 
     private void addFields(ClassOrInterfaceDeclaration serviceClass, String projectName) {

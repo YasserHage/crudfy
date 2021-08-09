@@ -28,7 +28,7 @@ public class ImportsMapper {
         imports.putAll(mapper.readValue(importResource, Map.class));
     }
 
-    public List<String> getImport(String type) {
+    public List<String> getImports(String type) {
         return imports.getOrDefault(type, Arrays.asList(type));
     }
 }
