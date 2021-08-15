@@ -206,6 +206,7 @@ public class ControllerBuilder extends ClassOrInterfaceBuilder{
         Parameter parameter = new Parameter();
         parameter.setType(typeUtils.getClassOrInterfaceType(nameUtils.getResourceClassName(projectName)));
         parameter.setName(nameUtils.getResourceVariableName(projectName));
+        parameter.addAnnotation("RequestBody");
         return parameter;
     }
 }

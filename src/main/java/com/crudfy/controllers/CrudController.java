@@ -1,6 +1,8 @@
 package com.crudfy.controllers;
 
-import com.crudfy.domains.ComponentResource;
+import com.crudfy.domains.exceptions.ResourceValidationException;
+import com.crudfy.domains.resources.ComponentResource;
+import com.crudfy.domains.responses.ApiError;
 import com.crudfy.services.CrudService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -18,12 +20,18 @@ public class CrudController {
     private CrudService service;
 
     @PostMapping
-    public ResponseEntity<String> create(@RequestBody ComponentResource resource) {
+    public ResponseEntity create(@RequestBody ComponentResource resource) {
         try {
             service.createProject(resource);
-            return new ResponseEntity<>(String.format("Projeto criado com sucesso em %s", resource.getPath()), HttpStatus.OK);
+            return new ResponseEntity<>(String.format("Projeto criado com sucesso em %s", resource.getPath()),
+                    HttpStatus.OK);
+        } catch (ResourceValidationException e) {
+            return new ResponseEntity<>(new ApiError(e.getMessage(), "Entrada invalida"),
+                    HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
-            throw new RuntimeException("Ocorreu um erro ao criar o projeto, favor validar o formato da entrada", e);
+            return new ResponseEntity<>(
+                    new ApiError(String.format("Ocorreu um erro inesperado ao criar o projeto: %s", e.getMessage()), e.getStackTrace().toString()),
+                    HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

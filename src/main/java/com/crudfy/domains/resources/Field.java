@@ -1,4 +1,4 @@
-package com.crudfy.domains;
+package com.crudfy.domains.resources;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -8,4 +8,5 @@ import lombok.Data;
 public class Field {
     private String name;
     private String type;
+    private boolean isId;
 }

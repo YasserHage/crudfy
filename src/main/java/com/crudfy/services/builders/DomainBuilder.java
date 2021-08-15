@@ -1,6 +1,6 @@
 package com.crudfy.services.builders;
 
-import com.crudfy.domains.Field;
+import com.crudfy.domains.resources.Field;
 import com.crudfy.services.utils.ImportsMapper;
 import com.crudfy.services.utils.NameUtils;
 import com.github.javaparser.JavaParser;
@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -53,7 +54,14 @@ public class DomainBuilder extends ClassOrInterfaceBuilder{
         CompilationUnit compilationUnit = initialize("com." + projectName + ".domains", className, false);
         ClassOrInterfaceDeclaration entityClass = compilationUnit.getClassByName(className).get();
 
+        addImports(Arrays.asList(
+                "javax.persistence.Entity"
+        ));
+        addAnnotations(Arrays.asList(
+                "Entity"
+        ));
         buildDomainClass(entityClass, fields);
+        addId(entityClass, fields);
 
         write(domainPath, "Erro na escrita da classe Entity");
     }
@@ -81,5 +89,17 @@ public class DomainBuilder extends ClassOrInterfaceBuilder{
             imports.addAll(mapper.getImports(field.getType()));
         });
         addImports(imports.stream().distinct().collect(Collectors.toList()));
+    }
+
+    private void addId(ClassOrInterfaceDeclaration entityClass, List<Field> fields) {
+
+        Optional<Field> id = fields.stream().filter(Field::isId).findFirst();
+
+        if (id.isPresent()) {
+            addImports(Arrays.asList(
+                    "javax.persistence.Id"
+            ));
+            entityClass.getFieldByName(id.get().getName()).get().addAnnotation("Id");
+        }
     }
 }

@@ -1,7 +1,8 @@
 package com.crudfy.services;
 
-import com.crudfy.domains.ComponentResource;
-import com.crudfy.domains.Field;
+import com.crudfy.domains.exceptions.ResourceValidationException;
+import com.crudfy.domains.resources.ComponentResource;
+import com.crudfy.domains.resources.Field;
 import com.crudfy.services.builders.ControllerBuilder;
 import com.crudfy.services.builders.DomainBuilder;
 import com.crudfy.services.builders.RepositoryBuilder;
@@ -22,8 +23,10 @@ import com.github.javaparser.ast.stmt.ExpressionStmt;
 import com.github.javaparser.ast.type.VoidType;
 import org.apache.maven.model.*;
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
+import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -31,6 +34,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 @Service
 public class CrudService {
@@ -54,6 +58,7 @@ public class CrudService {
     private TypeUtils typeUtils;
 
     public void createProject(ComponentResource resource) {
+        verifyResource(resource);
         String basePath = resource.getPath();
         String projectName = resource.getName();
 
@@ -62,6 +67,19 @@ public class CrudService {
         createRepositoryClasses(basePath, projectName);
         createControllerClasses(basePath, projectName, resource.getFields());
         createServiceClasses(basePath, projectName);
+    }
+
+    private void verifyResource(ComponentResource resource) {
+        if (CollectionUtils.isEmpty(resource.getFields())) {
+            throw new ResourceValidationException("É necessário ao menos um campo para construir o projeto");
+        } else {
+            List<Field> idList = resource.getFields().stream()
+                    .filter(Field::isId)
+                    .collect(Collectors.toList());
+            if (idList.size() > 1) {
+                throw new ResourceValidationException("Ainda não é possível criar projetos com chaves primárias compostas");
+            }
+        }
     }
 
     private void createServiceClasses(String basePath, String projectName) {
@@ -150,12 +168,109 @@ public class CrudService {
         Properties properties = new Properties();
         properties.setProperty("java.version", "11");
 
+        Build build = new Build();
+        build.setPlugins(createPomPlugins());
+
+        Model model = new Model();
+        model.setModelVersion("4.0.0");
+        model.setParent(parent);
+        model.setGroupId( "some.group.id" );
+        model.setArtifactId(projectName);
+        model.setVersion("0.0.1-SNAPSHOT");
+        model.setName(projectName);
+        model.setDescription(projectName + " basic CRUD project (Made by CRUDFY)");
+        model.setProperties(properties);
+        model.setDependencies(createPomDependencies());
+        model.setBuild(build);
+
+        try {
+            File file = new File(basePath + "\\pom.xml");
+            file.createNewFile();
+            FileWriter writer = new FileWriter(file);
+            new MavenXpp3Writer().write( writer, model );
+            writer.close();
+        } catch (IOException e) {
+            throw new RuntimeException("Problema ao criar o arquivo pom.xml", e);
+        }
+    }
+
+    private List<Plugin> createPomPlugins() {
+        List<Plugin> plugins = new ArrayList<>();
+
+        Plugin springMavenPlugin = new Plugin();
+        springMavenPlugin.setGroupId("org.springframework.boot");
+        springMavenPlugin.setArtifactId("spring-boot-maven-plugin");
+        springMavenPlugin.setVersion("${project.parent.version}");
+        plugins.add(springMavenPlugin);
+
+        Xpp3Dom latestVersion = new Xpp3Dom("version");
+        latestVersion.setValue("LATEST");
+
+        Xpp3Dom lombokPathGroupId = new Xpp3Dom("groupId");
+        lombokPathGroupId.setValue("org.projectlombok");
+
+        Xpp3Dom lombokPathArtifactId = new Xpp3Dom("artifactId");
+        lombokPathArtifactId.setValue("lombok");
+
+        Xpp3Dom lombokPath = new Xpp3Dom("path");
+        lombokPath.addChild(lombokPathGroupId);
+        lombokPath.addChild(lombokPathArtifactId);
+        lombokPath.addChild(latestVersion);
+
+        Xpp3Dom mapstructPathGroupId = new Xpp3Dom("groupId");
+        mapstructPathGroupId.setValue("org.mapstruct");
+
+        Xpp3Dom mapstructPathArtifactId = new Xpp3Dom("artifactId");
+        mapstructPathArtifactId.setValue("mapstruct-processor");
+
+        Xpp3Dom mapstructPath = new Xpp3Dom("path");
+        mapstructPath.addChild(mapstructPathGroupId);
+        mapstructPath.addChild(mapstructPathArtifactId);
+        mapstructPath.addChild(latestVersion);
+
+        Xpp3Dom annotationProcessorPaths = new Xpp3Dom("annotationProcessorPaths");
+        annotationProcessorPaths.addChild(lombokPath);
+        annotationProcessorPaths.addChild(mapstructPath);
+
+        Xpp3Dom source = new Xpp3Dom("source");
+        source.setValue("11");
+
+        Xpp3Dom target = new Xpp3Dom("target");
+        target.setValue("11");
+
+        Xpp3Dom mavenCompilerConfig = new Xpp3Dom("configuration");
+        mavenCompilerConfig.addChild(source);
+        mavenCompilerConfig.addChild(target);
+        mavenCompilerConfig.addChild(annotationProcessorPaths);
+
+        Plugin mavenCompilerPlugin = new Plugin();
+        mavenCompilerPlugin.setGroupId("org.apache.maven.plugins");
+        mavenCompilerPlugin.setArtifactId("maven-compiler-plugin");
+        mavenCompilerPlugin.setVersion("3.8.1");
+        mavenCompilerPlugin.setConfiguration(mavenCompilerConfig);
+        plugins.add(mavenCompilerPlugin);
+
+        return plugins;
+    }
+
+    private List<Dependency> createPomDependencies() {
         List<Dependency> dependencies = new ArrayList<>();
 
         Dependency dataJpa = new Dependency();
         dataJpa.setGroupId("org.springframework.boot");
         dataJpa.setArtifactId("spring-boot-starter-data-jpa");
         dependencies.add(dataJpa);
+
+        Dependency dataJdbc = new Dependency();
+        dataJdbc.setGroupId("org.springframework.boot");
+        dataJdbc.setArtifactId("spring-boot-starter-data-jdbc");
+        dependencies.add(dataJdbc);
+
+        Dependency mysql = new Dependency();
+        mysql.setGroupId("mysql");
+        mysql.setArtifactId("mysql-connector-java");
+        mysql.setScope("runtime");
+        dependencies.add(mysql);
 
         Dependency springWeb = new Dependency();
         springWeb.setGroupId("org.springframework.boot");
@@ -184,37 +299,6 @@ public class CrudService {
         springTest.setScope("test");
         dependencies.add(springTest);
 
-        Plugin plugin = new Plugin();
-        plugin.setGroupId("org.springframework.boot");
-        plugin.setArtifactId("spring-boot-maven-plugin");
-        plugin.setVersion("${project.parent.version}");
-
-        List<Plugin> plugins = new ArrayList<>();
-        plugins.add(plugin);
-
-        Build build = new Build();
-        build.setPlugins(plugins);
-
-        Model model = new Model();
-        model.setModelVersion("4.0.0");
-        model.setParent(parent);
-        model.setGroupId( "some.group.id" );
-        model.setArtifactId(projectName);
-        model.setVersion("0.0.1-SNAPSHOT");
-        model.setName(projectName);
-        model.setDescription(projectName + " basic CRUD project (Made by CRUDFY)");
-        model.setProperties(properties);
-        model.setDependencies(dependencies);
-        model.setBuild(build);
-
-        try {
-            File file = new File(basePath + "\\pom.xml");
-            file.createNewFile();
-            FileWriter writer = new FileWriter(file);
-            new MavenXpp3Writer().write( writer, model );
-            writer.close();
-        } catch (IOException e) {
-            throw new RuntimeException("Problema ao criar o arquivo pom.xml", e);
-        }
+        return dependencies;
     }
 }

@@ -1,4 +1,4 @@
-package com.crudfy.domains;
+package com.crudfy.domains.resources;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
