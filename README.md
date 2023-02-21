@@ -1,5 +1,6 @@
 # crudfy
 
+#### PT:
 Essa é uma ferramenta utilitaria para agilizar o desenvolvimento de APIs CRUD, utilizando spring-jpa. O projeto gerado tem toda a estrutura de controller, service, domain e o arquivo pom.xml
 
 1. Gerando a API
@@ -35,3 +36,7 @@ Essa é uma ferramenta utilitaria para agilizar o desenvolvimento de APIs CRUD, 
   - fields: Além dos tipos primitivos, pode verificar outros tipos suportados em "src/main/resources/imports-mapping.json"
 
 Obs: Ainda não é suportado tabelas utilizando chaves compostas
+
+#### EN:
+
+
