@@ -1,5 +1,6 @@
 package com.crudfy.services.builders;
 
+import com.crudfy.domains.resources.Database;
 import com.crudfy.domains.resources.Field;
 import com.crudfy.services.utils.ImportsMapper;
 import com.crudfy.services.utils.NameUtils;
@@ -7,14 +8,12 @@ import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.expr.NormalAnnotationExpr;
 import com.github.javaparser.ast.type.Type;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,7 +28,7 @@ public class DomainBuilder extends ClassOrInterfaceBuilder{
     public void buildResponse(String domainPath, String projectName, List<Field> fields) {
 
         String className = nameUtils.getResponseClassName(projectName) ;
-        CompilationUnit compilationUnit = initialize("com." + projectName + ".domains", className, false);
+        CompilationUnit compilationUnit = initialize(nameUtils.getRootImportPath(projectName) + ".domains", className, false);
         ClassOrInterfaceDeclaration responseClass = compilationUnit.getClassByName(className).get();
 
         buildDomainClass(responseClass, fields);
@@ -40,7 +39,7 @@ public class DomainBuilder extends ClassOrInterfaceBuilder{
     public void buildResource(String domainPath, String projectName, List<Field> fields) {
 
         String className = nameUtils.getResourceClassName(projectName);
-        CompilationUnit compilationUnit = initialize("com." + projectName + ".domains", className, false);
+        CompilationUnit compilationUnit = initialize(nameUtils.getRootImportPath(projectName) + ".domains", className, false);
         ClassOrInterfaceDeclaration resourceClass = compilationUnit.getClassByName(className).get();
 
         buildDomainClass(resourceClass, fields);
@@ -48,20 +47,25 @@ public class DomainBuilder extends ClassOrInterfaceBuilder{
         write(domainPath, "Erro na escrita da classe Resource");
     }
 
-    public void buildEntity(String domainPath, String projectName, List<Field> fields) {
+    public void buildEntity(String domainPath, String projectName, List<Field> fields, Database database) {
 
         String className = nameUtils.getBaseClassName(projectName);
-        CompilationUnit compilationUnit = initialize("com." + projectName + ".domains", className, false);
+        CompilationUnit compilationUnit = initialize(nameUtils.getRootImportPath(projectName) + ".domains", className, false);
         ClassOrInterfaceDeclaration entityClass = compilationUnit.getClassByName(className).get();
 
-        addImports(Arrays.asList(
-                "javax.persistence.Entity"
-        ));
-        addAnnotations(Arrays.asList(
-                "Entity"
-        ));
+        if (database.equals(Database.MONGODB)) {
+            addImports(Arrays.asList(
+                    "org.springframework.data.mongodb.core.mapping.Document"
+            ));
+            addAnnotation("Document", Map.of("value", "\"" + projectName.toLowerCase() + "\""));
+        } else {
+            addImports(Arrays.asList(
+                    "javax.persistence.Entity"
+            ));
+            addAnnotation("Entity");
+        }
         buildDomainClass(entityClass, fields);
-        addId(entityClass, fields);
+        addId(entityClass, fields, database);
 
         write(domainPath, "Erro na escrita da classe Entity");
     }
@@ -86,19 +90,31 @@ public class DomainBuilder extends ClassOrInterfaceBuilder{
         fields.forEach(field -> {
             Type fieldType = parser.parseType(field.getType()).getResult().get();
             commonClass.addField(fieldType, field.getName(), Modifier.Keyword.PRIVATE);
-            imports.addAll(mapper.getImports(field.getType()));
+            List<String> fieldImports = mapper.getImports(field.getType());
+            if (Objects.nonNull(fieldImports)) {
+                imports.addAll(fieldImports);
+            }
         });
-        addImports(imports.stream().distinct().collect(Collectors.toList()));
+        addImports(imports.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList()));
     }
 
-    private void addId(ClassOrInterfaceDeclaration entityClass, List<Field> fields) {
+    private void addId(ClassOrInterfaceDeclaration entityClass, List<Field> fields, Database database) {
 
         Optional<Field> id = fields.stream().filter(Field::isId).findFirst();
 
         if (id.isPresent()) {
-            addImports(Arrays.asList(
-                    "javax.persistence.Id"
-            ));
+            if (database.equals(Database.MONGODB))  {
+                addImports(Arrays.asList(
+                        "org.springframework.data.annotation.Id"
+                ));
+            } else {
+                addImports(Arrays.asList(
+                        "javax.persistence.Id"
+                ));
+            }
             entityClass.getFieldByName(id.get().getName()).get().addAnnotation("Id");
         }
     }

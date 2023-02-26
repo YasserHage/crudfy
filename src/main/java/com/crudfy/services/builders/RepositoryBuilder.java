@@ -1,5 +1,6 @@
 package com.crudfy.services.builders;
 
+import com.crudfy.domains.resources.Database;
 import com.crudfy.services.utils.NameUtils;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
@@ -14,19 +15,25 @@ public class RepositoryBuilder extends ClassOrInterfaceBuilder{
     @Autowired
     private NameUtils nameUtils;
 
-    public void buildRepository(String repositoryPath, String projectName) {
+    public void buildRepository(String repositoryPath, String projectName, Database database) {
 
         String interfaceName = nameUtils.getRepositoryClassName(projectName) ;
 
-        CompilationUnit compilationUnit = initialize("com." + projectName + ".repositories", interfaceName,true);
+        CompilationUnit compilationUnit = initialize(nameUtils.getRootImportPath(projectName) + ".repositories", interfaceName,true);
         ClassOrInterfaceDeclaration repositoryInterface = compilationUnit.getInterfaceByName(interfaceName).get();
-        repositoryInterface.addExtendedType("CrudRepository<" + nameUtils.getBaseClassName(projectName) + ", String>");
 
         addImports(Arrays.asList(
                 nameUtils.getEntityImportPath(projectName),
-                "org.springframework.data.repository.CrudRepository",
                 "org.springframework.stereotype.Repository"));
-        addAnnotations(Arrays.asList("Repository"));
+
+        if (database.equals(Database.MONGODB)) {
+            addImports(Arrays.asList("org.springframework.data.mongodb.repository.MongoRepository"));
+            repositoryInterface.addExtendedType("MongoRepository<" + nameUtils.getBaseClassName(projectName) + ", String>");
+        } else {
+            addImports(Arrays.asList("org.springframework.data.repository.CrudRepository"));
+            repositoryInterface.addExtendedType("CrudRepository<" + nameUtils.getBaseClassName(projectName) + ", String>");
+        }
+        addAnnotation("Repository");
 
         write(repositoryPath, "Erro na escrita da interface Repository");
     }

@@ -35,7 +35,7 @@ public class ServiceBuilder extends ClassOrInterfaceBuilder{
 
         String interfaceName = nameUtils.getMapperClassName(projectName) ;
 
-        CompilationUnit compilationUnit = initialize("com." + projectName + ".services", interfaceName, true);
+        CompilationUnit compilationUnit = initialize(nameUtils.getRootImportPath(projectName) + ".services", interfaceName, true);
         ClassOrInterfaceDeclaration mapperInterface = compilationUnit.getInterfaceByName(interfaceName).get();
 
         addImports(Arrays.asList(
@@ -54,7 +54,7 @@ public class ServiceBuilder extends ClassOrInterfaceBuilder{
 
         String className = nameUtils.getServiceClassName(projectName) ;
 
-        CompilationUnit compilationUnit = initialize("com." + projectName + ".services", className, false);
+        CompilationUnit compilationUnit = initialize(nameUtils.getRootImportPath(projectName) + ".services", className, false);
         ClassOrInterfaceDeclaration serviceClass = compilationUnit.getClassByName(className).get();
 
         addImports(Arrays.asList(
@@ -68,7 +68,7 @@ public class ServiceBuilder extends ClassOrInterfaceBuilder{
                 "org.springframework.stereotype.Service",
                 "org.springframework.beans.factory.annotation.Autowired"
         ));
-        addAnnotations(Arrays.asList("Service"));
+        addAnnotation("Service");
         addFields(serviceClass, projectName);
         addServiceMethods(serviceClass, projectName);
 

@@ -2,10 +2,13 @@ package com.crudfy.services.builders;
 
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.expr.AnnotationExpr;
+import com.github.javaparser.ast.expr.NormalAnnotationExpr;
 
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 public abstract class ClassOrInterfaceBuilder {
 
@@ -36,6 +39,30 @@ public abstract class ClassOrInterfaceBuilder {
                 compilationUnit.getClassByName(classOrInterfaceName).get();
 
         annotations.forEach(classOrInterface::addAnnotation);
+    }
+
+    public void addAnnotation(String name) {
+        ClassOrInterfaceDeclaration classOrInterface = isInterface ?
+                compilationUnit.getInterfaceByName(classOrInterfaceName).get() :
+                compilationUnit.getClassByName(classOrInterfaceName).get();
+
+        NormalAnnotationExpr annotation = new NormalAnnotationExpr();
+        annotation.setName(name);
+        classOrInterface.addAnnotation(annotation);
+    }
+
+    public void addAnnotation(String name, Map<String, String> params) {
+        ClassOrInterfaceDeclaration classOrInterface = isInterface ?
+                compilationUnit.getInterfaceByName(classOrInterfaceName).get() :
+                compilationUnit.getClassByName(classOrInterfaceName).get();
+
+        NormalAnnotationExpr annotation = new NormalAnnotationExpr();
+        if (params != null) {
+            params.forEach((param,value) -> annotation.addPair(param, value));
+        }
+        annotation.setName(name);
+
+        classOrInterface.addAnnotation(annotation);
     }
 
     public void write(String path, String errorMessage) {

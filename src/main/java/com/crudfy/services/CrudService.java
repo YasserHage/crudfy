@@ -2,6 +2,7 @@ package com.crudfy.services;
 
 import com.crudfy.domains.exceptions.ResourceValidationException;
 import com.crudfy.domains.resources.ComponentResource;
+import com.crudfy.domains.resources.Database;
 import com.crudfy.domains.resources.Field;
 import com.crudfy.services.builders.ControllerBuilder;
 import com.crudfy.services.builders.DomainBuilder;
@@ -62,9 +63,9 @@ public class CrudService {
         String basePath = resource.getPath();
         String projectName = resource.getName();
 
-        createBaseProject(basePath, projectName);
-        createDomainClasses(basePath, projectName, resource.getFields());
-        createRepositoryClasses(basePath, projectName);
+        createBaseProject(basePath, projectName, resource.getDatabase());
+        createDomainClasses(basePath, projectName, resource.getFields(), resource.getDatabase());
+        createRepositoryClasses(basePath, projectName, resource.getDatabase());
         createControllerClasses(basePath, projectName, resource.getFields());
         createServiceClasses(basePath, projectName);
     }
@@ -89,18 +90,18 @@ public class CrudService {
         serviceBuilder.buildService(servicePath, projectName);
     }
 
-    private void createRepositoryClasses(String basePath, String projectName) {
+    private void createRepositoryClasses(String basePath, String projectName, Database database) {
 
         String repositoryPath = nameUtils.getRepositoryPath(basePath, projectName);
-        repositoryBuilder.buildRepository(repositoryPath, projectName);
+        repositoryBuilder.buildRepository(repositoryPath, projectName, database);
     }
 
-    private void createDomainClasses(String basePath, String projectName, List<Field> fields) {
+    private void createDomainClasses(String basePath, String projectName, List<Field> fields, Database database) {
 
         String domainPath = nameUtils.getDomainPath(basePath, projectName);
         domainBuilder.buildResponse(domainPath, projectName, fields);
         domainBuilder.buildResource(domainPath, projectName, fields);
-        domainBuilder.buildEntity(domainPath, projectName, fields);
+        domainBuilder.buildEntity(domainPath, projectName, fields, database);
     }
 
     private void createControllerClasses(String basePath, String projectName, List<Field> fields) {
@@ -109,7 +110,7 @@ public class CrudService {
         controllerBuilder.buildController(controllerPath, projectName);
     }
 
-    private void createBaseProject(String basePath, String projectName) {
+    private void createBaseProject(String basePath, String projectName, Database database) {
 
         new File(nameUtils.getResourcePath(basePath)).mkdirs();
         new File(nameUtils.getControllerPath(basePath, projectName)).mkdirs();
@@ -118,17 +119,17 @@ public class CrudService {
         new File(nameUtils.getRepositoryPath(basePath, projectName)).mkdir();
         new File(nameUtils.getTestRootPath(basePath, projectName)).mkdirs();
 
-        createMainClass(basePath, projectName);
-        createPomFile(basePath, projectName);
+        createMainClass(basePath, projectName, database);
+        createPomFile(basePath, projectName, database);
     }
 
-    private void createMainClass(String basePath, String projectName) {
+    private void createMainClass(String basePath, String projectName, Database database) {
 
         CompilationUnit compilationUnit = new CompilationUnit();
         String className = nameUtils.getMainClassName(projectName);
 
         //Class and Package
-        compilationUnit.setPackageDeclaration("com." + projectName);
+        compilationUnit.setPackageDeclaration(nameUtils.getRootImportPath(projectName));
         ClassOrInterfaceDeclaration mainClass = compilationUnit.addClass(className).setPublic(true);
 
         //Imports
@@ -137,6 +138,12 @@ public class CrudService {
 
         //Annotations
         mainClass.addAnnotation("SpringBootApplication");
+
+        // Database dependent
+        if (database.equals(Database.MONGODB)) {
+            compilationUnit.addImport("org.springframework.data.mongodb.repository.config.EnableMongoRepositories");
+            mainClass.addAnnotation("EnableMongoRepositories");
+        }
 
         //Method Block
         BlockStmt blockStmt = new BlockStmt();
@@ -158,7 +165,7 @@ public class CrudService {
         }
     }
 
-    private void createPomFile(String basePath, String projectName) {
+    private void createPomFile(String basePath, String projectName, Database database) {
 
         Parent parent = new Parent();
         parent.setArtifactId("spring-boot-starter-parent");
@@ -180,7 +187,7 @@ public class CrudService {
         model.setName(projectName);
         model.setDescription(projectName + " basic CRUD project (Made by CRUDFY)");
         model.setProperties(properties);
-        model.setDependencies(createPomDependencies());
+        model.setDependencies(createPomDependencies(database));
         model.setBuild(build);
 
         try {
@@ -253,24 +260,31 @@ public class CrudService {
         return plugins;
     }
 
-    private List<Dependency> createPomDependencies() {
+    private List<Dependency> createPomDependencies(Database database) {
         List<Dependency> dependencies = new ArrayList<>();
 
-        Dependency dataJpa = new Dependency();
-        dataJpa.setGroupId("org.springframework.boot");
-        dataJpa.setArtifactId("spring-boot-starter-data-jpa");
-        dependencies.add(dataJpa);
+        if (database.equals(Database.MONGODB)) {
+            Dependency dataMongodb = new Dependency();
+            dataMongodb.setGroupId("org.springframework.boot");
+            dataMongodb.setArtifactId("spring-boot-starter-data-mongodb");
+            dependencies.add(dataMongodb);
+        } else {
+            Dependency dataJpa = new Dependency();
+            dataJpa.setGroupId("org.springframework.boot");
+            dataJpa.setArtifactId("spring-boot-starter-data-jpa");
+            dependencies.add(dataJpa);
 
-        Dependency dataJdbc = new Dependency();
-        dataJdbc.setGroupId("org.springframework.boot");
-        dataJdbc.setArtifactId("spring-boot-starter-data-jdbc");
-        dependencies.add(dataJdbc);
+            Dependency dataJdbc = new Dependency();
+            dataJdbc.setGroupId("org.springframework.boot");
+            dataJdbc.setArtifactId("spring-boot-starter-data-jdbc");
+            dependencies.add(dataJdbc);
 
-        Dependency mysql = new Dependency();
-        mysql.setGroupId("mysql");
-        mysql.setArtifactId("mysql-connector-java");
-        mysql.setScope("runtime");
-        dependencies.add(mysql);
+            Dependency mysql = new Dependency();
+            mysql.setGroupId("mysql");
+            mysql.setArtifactId("mysql-connector-java");
+            mysql.setScope("runtime");
+            dependencies.add(mysql);
+        }
 
         Dependency springWeb = new Dependency();
         springWeb.setGroupId("org.springframework.boot");
