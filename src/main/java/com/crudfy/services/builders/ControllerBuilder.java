@@ -37,7 +37,7 @@ public class ControllerBuilder extends ClassOrInterfaceBuilder{
     public void buildController(String controllerPath, String projectName) {
 
         String className = nameUtils.getControllerClassName(projectName) ;
-        CompilationUnit compilationUnit = initialize("com." + projectName + ".controllers", className, false);
+        CompilationUnit compilationUnit = initialize(nameUtils.getRootImportPath(projectName) + ".controllers", className, false);
         ClassOrInterfaceDeclaration controllerClass = compilationUnit.getClassByName(className).get();
 
         addImports(Arrays.asList(

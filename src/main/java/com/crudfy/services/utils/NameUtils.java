@@ -71,7 +71,7 @@ public class NameUtils {
 
 
     public String getRootImportPath(String projectName) {
-        return String.format("com.%s", projectName);
+        return String.format("com.%s", projectName.toLowerCase());
     }
 
     public String getResponseImportPath(String projectName) {
@@ -95,11 +95,11 @@ public class NameUtils {
     }
 
     public String getMainRootPath(String basePath, String projectName) {
-        return String.format("%s/src/main/java/com/%s", basePath, projectName);
+        return String.format("%s/src/main/java/com/%s", basePath, projectName.toLowerCase());
     }
 
     public String getTestRootPath(String basePath, String projectName) {
-        return String.format("%s/src/test/java/com/%s", basePath, projectName);
+        return String.format("%s/src/test/java/com/%s", basePath, projectName.toLowerCase());
     }
 
     public String getResourcePath(String basePath) {
