@@ -53,16 +53,25 @@ public class DomainBuilder extends ClassOrInterfaceBuilder{
         CompilationUnit compilationUnit = initialize(nameUtils.getRootImportPath(projectName) + ".domains", className, false);
         ClassOrInterfaceDeclaration entityClass = compilationUnit.getClassByName(className).get();
 
-        if (database.equals(Database.MONGODB)) {
-            addImports(Arrays.asList(
-                    "org.springframework.data.mongodb.core.mapping.Document"
-            ));
-            addAnnotation("Document", Map.of("value", "\"" + projectName.toLowerCase() + "\""));
-        } else {
-            addImports(Arrays.asList(
-                    "javax.persistence.Entity"
-            ));
-            addAnnotation("Entity");
+        switch (database) {
+            case MONGODB:
+                addImports(Arrays.asList(
+                        "org.springframework.data.mongodb.core.mapping.Document"
+                ));
+                addAnnotation("Document", Map.of("value", "\"" + projectName.toLowerCase() + "\""));
+                break;
+            case ELASTICSEARCH:
+                addImports(Arrays.asList(
+                        "org.springframework.data.elasticsearch.annotations.Document"
+                ));
+                addAnnotation("Document", Map.of("indexName", "\"" + projectName.toLowerCase() + "\""));
+                break;
+            default:
+                addImports(Arrays.asList(
+                        "javax.persistence.Entity"
+                ));
+                addAnnotation("Entity");
+                break;
         }
         buildDomainClass(entityClass, fields);
         addId(entityClass, fields, database);
@@ -106,7 +115,7 @@ public class DomainBuilder extends ClassOrInterfaceBuilder{
         Optional<Field> id = fields.stream().filter(Field::isId).findFirst();
 
         if (id.isPresent()) {
-            if (database.equals(Database.MONGODB))  {
+            if (database.equals(Database.MONGODB) || database.equals(Database.ELASTICSEARCH))  {
                 addImports(Arrays.asList(
                         "org.springframework.data.annotation.Id"
                 ));

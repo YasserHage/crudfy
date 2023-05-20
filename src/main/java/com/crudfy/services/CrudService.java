@@ -119,11 +119,11 @@ public class CrudService {
         new File(nameUtils.getRepositoryPath(basePath, projectName)).mkdir();
         new File(nameUtils.getTestRootPath(basePath, projectName)).mkdirs();
 
-        createMainClass(basePath, projectName, database);
+        createMainClass(basePath, projectName);
         createPomFile(basePath, projectName, database);
     }
 
-    private void createMainClass(String basePath, String projectName, Database database) {
+    private void createMainClass(String basePath, String projectName) {
 
         CompilationUnit compilationUnit = new CompilationUnit();
         String className = nameUtils.getMainClassName(projectName);
@@ -138,12 +138,6 @@ public class CrudService {
 
         //Annotations
         mainClass.addAnnotation("SpringBootApplication");
-
-        // Database dependent
-        if (database.equals(Database.MONGODB)) {
-            compilationUnit.addImport("org.springframework.data.mongodb.repository.config.EnableMongoRepositories");
-            mainClass.addAnnotation("EnableMongoRepositories");
-        }
 
         //Method Block
         BlockStmt blockStmt = new BlockStmt();
@@ -263,27 +257,36 @@ public class CrudService {
     private List<Dependency> createPomDependencies(Database database) {
         List<Dependency> dependencies = new ArrayList<>();
 
-        if (database.equals(Database.MONGODB)) {
-            Dependency dataMongodb = new Dependency();
-            dataMongodb.setGroupId("org.springframework.boot");
-            dataMongodb.setArtifactId("spring-boot-starter-data-mongodb");
-            dependencies.add(dataMongodb);
-        } else {
-            Dependency dataJpa = new Dependency();
-            dataJpa.setGroupId("org.springframework.boot");
-            dataJpa.setArtifactId("spring-boot-starter-data-jpa");
-            dependencies.add(dataJpa);
+        switch (database) {
+            case MONGODB:
+                Dependency dataMongodb = new Dependency();
+                dataMongodb.setGroupId("org.springframework.boot");
+                dataMongodb.setArtifactId("spring-boot-starter-data-mongodb");
+                dependencies.add(dataMongodb);
+                break;
+            case ELASTICSEARCH:
+                Dependency dataElasticsearch = new Dependency();
+                dataElasticsearch.setGroupId("org.springframework.data");
+                dataElasticsearch.setArtifactId("spring-data-elasticsearch");
+                dependencies.add(dataElasticsearch);
+                break;
+            default:
+                Dependency dataJpa = new Dependency();
+                dataJpa.setGroupId("org.springframework.boot");
+                dataJpa.setArtifactId("spring-boot-starter-data-jpa");
+                dependencies.add(dataJpa);
 
-            Dependency dataJdbc = new Dependency();
-            dataJdbc.setGroupId("org.springframework.boot");
-            dataJdbc.setArtifactId("spring-boot-starter-data-jdbc");
-            dependencies.add(dataJdbc);
+                Dependency dataJdbc = new Dependency();
+                dataJdbc.setGroupId("org.springframework.boot");
+                dataJdbc.setArtifactId("spring-boot-starter-data-jdbc");
+                dependencies.add(dataJdbc);
 
-            Dependency mysql = new Dependency();
-            mysql.setGroupId("mysql");
-            mysql.setArtifactId("mysql-connector-java");
-            mysql.setScope("runtime");
-            dependencies.add(mysql);
+                Dependency mysql = new Dependency();
+                mysql.setGroupId("mysql");
+                mysql.setArtifactId("mysql-connector-java");
+                mysql.setScope("runtime");
+                dependencies.add(mysql);
+                break;
         }
 
         Dependency springWeb = new Dependency();

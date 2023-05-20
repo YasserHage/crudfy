@@ -26,15 +26,21 @@ public class RepositoryBuilder extends ClassOrInterfaceBuilder{
                 nameUtils.getEntityImportPath(projectName),
                 "org.springframework.stereotype.Repository"));
 
-        if (database.equals(Database.MONGODB)) {
-            addImports(Arrays.asList("org.springframework.data.mongodb.repository.MongoRepository"));
-            repositoryInterface.addExtendedType("MongoRepository<" + nameUtils.getBaseClassName(projectName) + ", String>");
-        } else {
-            addImports(Arrays.asList("org.springframework.data.repository.CrudRepository"));
-            repositoryInterface.addExtendedType("CrudRepository<" + nameUtils.getBaseClassName(projectName) + ", String>");
+        switch (database) {
+            case MONGODB:
+                addImports(Arrays.asList("org.springframework.data.mongodb.repository.MongoRepository"));
+                repositoryInterface.addExtendedType("MongoRepository<" + nameUtils.getBaseClassName(projectName) + ", String>");
+                break;
+            case ELASTICSEARCH:
+                addImports(Arrays.asList("org.springframework.data.elasticsearch.repository.ElasticsearchRepository"));
+                repositoryInterface.addExtendedType("ElasticsearchRepository<" + nameUtils.getBaseClassName(projectName) + ", String>");
+                break;
+            default:
+                addImports(Arrays.asList("org.springframework.data.repository.CrudRepository"));
+                repositoryInterface.addExtendedType("CrudRepository<" + nameUtils.getBaseClassName(projectName) + ", String>");
+                break;
         }
         addAnnotation("Repository");
-
         write(repositoryPath, "Erro na escrita da interface Repository");
     }
 }
