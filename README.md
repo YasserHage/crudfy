@@ -10,7 +10,7 @@ Essa é uma ferramenta utilitaria para agilizar o desenvolvimento de APIs CRUD, 
   {
     "path": "C:\\My\\Path",
     "name": "projectName",
-    "database": "MONGODB || MYSQL"
+    "database": "MONGODB || MYSQL || ELASTICSEARCH"
     "fields": [
         {
             "name": "cpf",

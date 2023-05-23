@@ -11,5 +11,5 @@ public class ComponentResource {
     private String name;
     private String path;
     private Database database = Database.MYSQL;
-    private List<Field> fields;
+    private List<Entity> entities;
 }

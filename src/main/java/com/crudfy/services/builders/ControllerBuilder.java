@@ -34,16 +34,16 @@ public class ControllerBuilder extends ClassOrInterfaceBuilder{
     @Autowired
     private ArgumentUtils argumentUtils;
 
-    public void buildController(String controllerPath, String projectName) {
+    public void buildController(String controllerPath, String projectName, String entityName) {
 
-        String className = nameUtils.getControllerClassName(projectName) ;
+        String className = nameUtils.getControllerClassName(entityName) ;
         CompilationUnit compilationUnit = initialize(nameUtils.getRootImportPath(projectName) + ".controllers", className, false);
         ClassOrInterfaceDeclaration controllerClass = compilationUnit.getClassByName(className).get();
 
         addImports(Arrays.asList(
-                nameUtils.getResourceImportPath(projectName),
-                nameUtils.getResponseImportPath(projectName),
-                nameUtils.getServiceImportPath(projectName),
+                nameUtils.getResourceImportPath(projectName, entityName),
+                nameUtils.getResponseImportPath(projectName, entityName),
+                nameUtils.getServiceImportPath(projectName, entityName),
                 "org.springframework.beans.factory.annotation.Autowired",
                 "org.springframework.web.bind.annotation.*",
                 "org.springframework.stereotype.Controller",
@@ -53,40 +53,40 @@ public class ControllerBuilder extends ClassOrInterfaceBuilder{
                 "java.util.List"
                 ));
 
-        addControllerAnnotations(controllerClass, projectName);
-        addFields(controllerClass, projectName);
-        addMethods(controllerClass, projectName);
+        addControllerAnnotations(controllerClass, entityName);
+        addFields(controllerClass, entityName);
+        addMethods(controllerClass, entityName);
 
         write(controllerPath, "Erro na escrita da classe Controller");
     }
 
-    private void addControllerAnnotations(ClassOrInterfaceDeclaration controllerClass, String projectName) {
+    private void addControllerAnnotations(ClassOrInterfaceDeclaration controllerClass, String entityName) {
         controllerClass.addAnnotation("Controller");
-        controllerClass.addSingleMemberAnnotation("RequestMapping", "\"/" + projectName + "\"");
+        controllerClass.addSingleMemberAnnotation("RequestMapping", "\"/" + entityName + "\"");
     }
 
-    private void addFields(ClassOrInterfaceDeclaration controllerClass, String projectName) {
+    private void addFields(ClassOrInterfaceDeclaration controllerClass, String entityName) {
 
-        controllerClass.addPrivateField(nameUtils.getServiceClassName(projectName), nameUtils.getServiceVariableName(projectName)).addAnnotation("Autowired");
+        controllerClass.addPrivateField(nameUtils.getServiceClassName(entityName), nameUtils.getServiceVariableName(entityName)).addAnnotation("Autowired");
     }
 
-    private void addMethods(ClassOrInterfaceDeclaration controllerClass, String projectName) {
-        addFindMethod(controllerClass, projectName);
-        addFindAllMethod(controllerClass, projectName);
-        addCreateMethod(controllerClass, projectName);
-        addUpdateMethod(controllerClass, projectName);
-        addDeleteMethod(controllerClass, projectName);
+    private void addMethods(ClassOrInterfaceDeclaration controllerClass, String entityName) {
+        addFindMethod(controllerClass, entityName);
+        addFindAllMethod(controllerClass, entityName);
+        addCreateMethod(controllerClass, entityName);
+        addUpdateMethod(controllerClass, entityName);
+        addDeleteMethod(controllerClass, entityName);
     }
 
-    private void addFindMethod(ClassOrInterfaceDeclaration controllerClass, String projectName) {
+    private void addFindMethod(ClassOrInterfaceDeclaration controllerClass, String entityName) {
 
-        String responseVariableName = nameUtils.getResponseVariableName(projectName);
-        ClassOrInterfaceType optionalResponse = typeUtils.getClassOrInterfaceType(String.format("Optional<%s>", nameUtils.getResponseClassName(projectName)));
+        String responseVariableName = nameUtils.getResponseVariableName(entityName);
+        ClassOrInterfaceType optionalResponse = typeUtils.getClassOrInterfaceType(String.format("Optional<%s>", nameUtils.getResponseClassName(entityName)));
 
         VariableDeclarator responseDeclaration = new VariableDeclarator(
                 optionalResponse,
                 responseVariableName,
-                new MethodCallExpr(new NameExpr(nameUtils.getServiceVariableName(projectName)), "find", argumentUtils.buildNameArgument("id")));
+                new MethodCallExpr(new NameExpr(nameUtils.getServiceVariableName(entityName)), "find", argumentUtils.buildNameArgument("id")));
 
         MethodCallExpr getExpr = new MethodCallExpr(new NameExpr(responseVariableName), "get");
         MethodCallExpr isPresent = new MethodCallExpr(new NameExpr(responseVariableName), "isPresent");
@@ -102,21 +102,21 @@ public class ControllerBuilder extends ClassOrInterfaceBuilder{
         blockStmt.addStatement(new IfStmt(isPresent, returnOk, returnNotFound));
 
         MethodDeclaration findMethod = controllerClass.addMethod("find", Modifier.Keyword.PUBLIC);
-        findMethod.setType(typeUtils.getResponseEntityType(nameUtils.getResponseClassName(projectName)));
+        findMethod.setType(typeUtils.getResponseEntityType(nameUtils.getResponseClassName(entityName)));
         findMethod.addSingleMemberAnnotation("GetMapping", "\"/{id}\"" );
         findMethod.addParameter(buildIdParameter());
         findMethod.setBody(blockStmt);
     }
 
-    private void addFindAllMethod(ClassOrInterfaceDeclaration controllerClass, String projectName) {
+    private void addFindAllMethod(ClassOrInterfaceDeclaration controllerClass, String entityName) {
 
-        String responseListVariableName = nameUtils.getResponseVariableName(projectName) + "List";
-        ClassOrInterfaceType responseList = typeUtils.getClassOrInterfaceType(String.format("List<%s>", nameUtils.getResponseClassName(projectName)));
+        String responseListVariableName = nameUtils.getResponseVariableName(entityName) + "List";
+        ClassOrInterfaceType responseList = typeUtils.getClassOrInterfaceType(String.format("List<%s>", nameUtils.getResponseClassName(entityName)));
 
         VariableDeclarator responseListDeclaration = new VariableDeclarator(
                 responseList,
                 responseListVariableName,
-                new MethodCallExpr(new NameExpr(nameUtils.getServiceVariableName(projectName)), "findAll"));
+                new MethodCallExpr(new NameExpr(nameUtils.getServiceVariableName(entityName)), "findAll"));
 
         MethodCallExpr isEmpty = new MethodCallExpr(new NameExpr(responseListVariableName), "isEmpty");
         ReturnStmt returnOk = new ReturnStmt(new ObjectCreationExpr()
@@ -131,14 +131,14 @@ public class ControllerBuilder extends ClassOrInterfaceBuilder{
         blockStmt.addStatement(new IfStmt(isEmpty, returnNoContent, returnOk));
 
         MethodDeclaration findAllMethod = controllerClass.addMethod("findAll", Modifier.Keyword.PUBLIC);
-        findAllMethod.setType(typeUtils.getResponseEntityType(String.format("List<%s>", nameUtils.getResponseClassName(projectName))));
+        findAllMethod.setType(typeUtils.getResponseEntityType(String.format("List<%s>", nameUtils.getResponseClassName(entityName))));
         findAllMethod.addAnnotation("GetMapping");
         findAllMethod.setBody(blockStmt);
     }
 
-    private void addCreateMethod(ClassOrInterfaceDeclaration controllerClass, String projectName) {
+    private void addCreateMethod(ClassOrInterfaceDeclaration controllerClass, String entityName) {
 
-        MethodCallExpr saveExpr = new MethodCallExpr(new NameExpr(nameUtils.getServiceVariableName(projectName)), "save", argumentUtils.buildNameArgument(nameUtils.getResourceVariableName(projectName)));
+        MethodCallExpr saveExpr = new MethodCallExpr(new NameExpr(nameUtils.getServiceVariableName(entityName)), "save", argumentUtils.buildNameArgument(nameUtils.getResourceVariableName(entityName)));
         ReturnStmt returnCreated = new ReturnStmt(new ObjectCreationExpr()
                 .setType(typeUtils.getResponseEntityType(""))
                 .setArguments(argumentUtils.buildStatusArgument(saveExpr, "CREATED")));
@@ -149,14 +149,14 @@ public class ControllerBuilder extends ClassOrInterfaceBuilder{
         MethodDeclaration createMethod = controllerClass.addMethod("create", Modifier.Keyword.PUBLIC);
         createMethod.setType(typeUtils.getClassOrInterfaceType("ResponseEntity"));
         createMethod.addAnnotation("PostMapping");
-        createMethod.addParameter(buildResourceParameter(projectName));
+        createMethod.addParameter(buildResourceParameter(entityName));
         createMethod.setBody(blockStmt);
     }
 
-    private void addUpdateMethod(ClassOrInterfaceDeclaration controllerClass, String projectName) {
+    private void addUpdateMethod(ClassOrInterfaceDeclaration controllerClass, String entityName) {
 
-        MethodCallExpr saveExpr = new MethodCallExpr(new NameExpr(nameUtils.getServiceVariableName(projectName)), "save", argumentUtils.buildNameArgument(nameUtils.getResourceVariableName(projectName)));
-        MethodCallExpr findExpr =  new MethodCallExpr(new NameExpr(nameUtils.getServiceVariableName(projectName)), "find", argumentUtils.buildNameArgument("id"));
+        MethodCallExpr saveExpr = new MethodCallExpr(new NameExpr(nameUtils.getServiceVariableName(entityName)), "save", argumentUtils.buildNameArgument(nameUtils.getResourceVariableName(entityName)));
+        MethodCallExpr findExpr =  new MethodCallExpr(new NameExpr(nameUtils.getServiceVariableName(entityName)), "find", argumentUtils.buildNameArgument("id"));
         MethodCallExpr isPresent = new MethodCallExpr(findExpr, "isPresent");
         ReturnStmt returnOk = new ReturnStmt(new ObjectCreationExpr()
                 .setType(typeUtils.getResponseEntityType(""))
@@ -172,13 +172,13 @@ public class ControllerBuilder extends ClassOrInterfaceBuilder{
         updateMethod.setType(typeUtils.getClassOrInterfaceType("ResponseEntity"));
         updateMethod.addSingleMemberAnnotation("PutMapping", "\"/{id}\"" );
         updateMethod.addParameter(buildIdParameter());
-        updateMethod.addParameter(buildResourceParameter(projectName));
+        updateMethod.addParameter(buildResourceParameter(entityName));
         updateMethod.setBody(blockStmt);
     }
 
-    private void addDeleteMethod(ClassOrInterfaceDeclaration controllerClass, String projectName) {
+    private void addDeleteMethod(ClassOrInterfaceDeclaration controllerClass, String entityName) {
 
-        MethodCallExpr deleteExpr = new MethodCallExpr(new NameExpr(nameUtils.getServiceVariableName(projectName)), "delete", argumentUtils.buildNameArgument("id"));
+        MethodCallExpr deleteExpr = new MethodCallExpr(new NameExpr(nameUtils.getServiceVariableName(entityName)), "delete", argumentUtils.buildNameArgument("id"));
         ReturnStmt returnNoContent = new ReturnStmt(new ObjectCreationExpr()
                 .setType(typeUtils.getResponseEntityType(""))
                 .setArguments(argumentUtils.buildEmptyStatusArgument("NO_CONTENT")));
@@ -202,10 +202,10 @@ public class ControllerBuilder extends ClassOrInterfaceBuilder{
         return parameter;
     }
 
-    private Parameter buildResourceParameter(String projectName) {
+    private Parameter buildResourceParameter(String entityName) {
         Parameter parameter = new Parameter();
-        parameter.setType(typeUtils.getClassOrInterfaceType(nameUtils.getResourceClassName(projectName)));
-        parameter.setName(nameUtils.getResourceVariableName(projectName));
+        parameter.setType(typeUtils.getClassOrInterfaceType(nameUtils.getResourceClassName(entityName)));
+        parameter.setName(nameUtils.getResourceVariableName(entityName));
         parameter.addAnnotation("RequestBody");
         return parameter;
     }
