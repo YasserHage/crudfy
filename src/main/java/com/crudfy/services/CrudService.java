@@ -62,7 +62,7 @@ public class CrudService {
     public void createProject(ComponentResource resource) {
         verifyResource(resource);
         String basePath = resource.getPath();
-        String projectName = resource.getName();
+        String projectName = resource.getProjectName();
 
         createBaseProject(basePath, projectName, resource.getDatabase());
         for (Entity entity : resource.getEntities()) {
