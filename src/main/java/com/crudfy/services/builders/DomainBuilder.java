@@ -25,9 +25,9 @@ public class DomainBuilder extends ClassOrInterfaceBuilder{
     @Autowired
     private NameUtils nameUtils;
 
-    public void buildResponse(String domainPath, String projectName, List<Field> fields) {
+    public void buildResponse(String domainPath, String projectName, String entityName, List<Field> fields) {
 
-        String className = nameUtils.getResponseClassName(projectName) ;
+        String className = nameUtils.getResponseClassName(entityName) ;
         CompilationUnit compilationUnit = initialize(nameUtils.getRootImportPath(projectName) + ".domains", className, false);
         ClassOrInterfaceDeclaration responseClass = compilationUnit.getClassByName(className).get();
 
@@ -36,9 +36,9 @@ public class DomainBuilder extends ClassOrInterfaceBuilder{
         write(domainPath, "Erro na escrita da classe Response");
     }
 
-    public void buildResource(String domainPath, String projectName, List<Field> fields) {
+    public void buildResource(String domainPath, String projectName, String entityName, List<Field> fields) {
 
-        String className = nameUtils.getResourceClassName(projectName);
+        String className = nameUtils.getResourceClassName(entityName);
         CompilationUnit compilationUnit = initialize(nameUtils.getRootImportPath(projectName) + ".domains", className, false);
         ClassOrInterfaceDeclaration resourceClass = compilationUnit.getClassByName(className).get();
 
@@ -47,9 +47,9 @@ public class DomainBuilder extends ClassOrInterfaceBuilder{
         write(domainPath, "Erro na escrita da classe Resource");
     }
 
-    public void buildEntity(String domainPath, String projectName, List<Field> fields, Database database) {
+    public void buildEntity(String domainPath, String projectName, String entityName, List<Field> fields, Database database) {
 
-        String className = nameUtils.getBaseClassName(projectName);
+        String className = nameUtils.getBaseClassName(entityName);
         CompilationUnit compilationUnit = initialize(nameUtils.getRootImportPath(projectName) + ".domains", className, false);
         ClassOrInterfaceDeclaration entityClass = compilationUnit.getClassByName(className).get();
 
@@ -58,13 +58,13 @@ public class DomainBuilder extends ClassOrInterfaceBuilder{
                 addImports(Arrays.asList(
                         "org.springframework.data.mongodb.core.mapping.Document"
                 ));
-                addAnnotation("Document", Map.of("value", "\"" + projectName.toLowerCase() + "\""));
+                addAnnotation("Document", Map.of("value", "\"" + entityName + "\""));
                 break;
             case ELASTICSEARCH:
                 addImports(Arrays.asList(
                         "org.springframework.data.elasticsearch.annotations.Document"
                 ));
-                addAnnotation("Document", Map.of("indexName", "\"" + projectName.toLowerCase() + "\""));
+                addAnnotation("Document", Map.of("indexName", "\"" + entityName + "\""));
                 break;
             default:
                 addImports(Arrays.asList(

@@ -3,6 +3,7 @@ package com.crudfy.services;
 import com.crudfy.domains.exceptions.ResourceValidationException;
 import com.crudfy.domains.resources.ComponentResource;
 import com.crudfy.domains.resources.Database;
+import com.crudfy.domains.resources.Entity;
 import com.crudfy.domains.resources.Field;
 import com.crudfy.services.builders.ControllerBuilder;
 import com.crudfy.services.builders.DomainBuilder;
@@ -61,53 +62,58 @@ public class CrudService {
     public void createProject(ComponentResource resource) {
         verifyResource(resource);
         String basePath = resource.getPath();
-        String projectName = resource.getName();
+        String projectName = resource.getProjectName();
 
         createBaseProject(basePath, projectName, resource.getDatabase());
-        createDomainClasses(basePath, projectName, resource.getFields(), resource.getDatabase());
-        createRepositoryClasses(basePath, projectName, resource.getDatabase());
-        createControllerClasses(basePath, projectName, resource.getFields());
-        createServiceClasses(basePath, projectName);
+        for (Entity entity : resource.getEntities()) {
+            createDomainClasses(basePath, projectName, entity.getName().toLowerCase(), entity.getFields(), resource.getDatabase());
+            createRepositoryClasses(basePath, projectName, entity.getName().toLowerCase(), resource.getDatabase());
+            createControllerClasses(basePath, projectName, entity.getName().toLowerCase());
+            createServiceClasses(basePath, projectName, entity.getName().toLowerCase());
+        }
     }
 
     private void verifyResource(ComponentResource resource) {
-        if (CollectionUtils.isEmpty(resource.getFields())) {
-            throw new ResourceValidationException("É necessário ao menos um campo para construir o projeto");
+        if (CollectionUtils.isEmpty(resource.getEntities())) {
+            //TODO Translate to english
+            throw new ResourceValidationException("É necessário ao menos uma entidade para construir o projeto");
         } else {
-            List<Field> idList = resource.getFields().stream()
-                    .filter(Field::isId)
-                    .collect(Collectors.toList());
-            if (idList.size() > 1) {
-                throw new ResourceValidationException("Ainda não é possível criar projetos com chaves primárias compostas");
+            for (Entity entity : resource.getEntities()) {
+                List<Field> idList = entity.getFields().stream()
+                        .filter(Field::isId)
+                        .collect(Collectors.toList());
+                if (idList.size() > 1) {
+                    throw new ResourceValidationException("Não é possível criar entidades com chaves primárias compostas");
+                }
             }
         }
     }
 
-    private void createServiceClasses(String basePath, String projectName) {
+    private void createServiceClasses(String basePath, String projectName, String entityName) {
 
         String servicePath = nameUtils.getServicePath(basePath, projectName);
-        serviceBuilder.buildMapper(servicePath, projectName);
-        serviceBuilder.buildService(servicePath, projectName);
+        serviceBuilder.buildMapper(servicePath, projectName, entityName);
+        serviceBuilder.buildService(servicePath, projectName, entityName);
     }
 
-    private void createRepositoryClasses(String basePath, String projectName, Database database) {
+    private void createRepositoryClasses(String basePath, String projectName, String entityName, Database database) {
 
         String repositoryPath = nameUtils.getRepositoryPath(basePath, projectName);
-        repositoryBuilder.buildRepository(repositoryPath, projectName, database);
+        repositoryBuilder.buildRepository(repositoryPath, projectName, entityName, database);
     }
 
-    private void createDomainClasses(String basePath, String projectName, List<Field> fields, Database database) {
+    private void createDomainClasses(String basePath, String projectName, String entityName, List<Field> fields, Database database) {
 
         String domainPath = nameUtils.getDomainPath(basePath, projectName);
-        domainBuilder.buildResponse(domainPath, projectName, fields);
-        domainBuilder.buildResource(domainPath, projectName, fields);
-        domainBuilder.buildEntity(domainPath, projectName, fields, database);
+        domainBuilder.buildResponse(domainPath, projectName, entityName, fields);
+        domainBuilder.buildResource(domainPath, projectName, entityName, fields);
+        domainBuilder.buildEntity(domainPath, projectName, entityName, fields, database);
     }
 
-    private void createControllerClasses(String basePath, String projectName, List<Field> fields) {
+    private void createControllerClasses(String basePath, String projectName, String entityName) {
 
         String controllerPath = nameUtils.getControllerPath(basePath, projectName);
-        controllerBuilder.buildController(controllerPath, projectName);
+        controllerBuilder.buildController(controllerPath, projectName, entityName);
     }
 
     private void createBaseProject(String basePath, String projectName, Database database) {

@@ -5,68 +5,68 @@ import org.springframework.stereotype.Component;
 @Component
 public class NameUtils {
 
-    public String getBaseClassName(String projectName) {
-        return projectName.substring(0, 1).toUpperCase() + projectName.substring(1);
+    public String getBaseClassName(String entityName) {
+        return entityName.toLowerCase().substring(0, 1).toUpperCase() + entityName.substring(1);
     }
 
     public String getMainClassName(String projectName) {
         return getBaseClassName(projectName) + "Application";
     }
 
-    public String getResponseClassName(String projectName) {
-        return getBaseClassName(projectName) + "Response";
+    public String getResponseClassName(String entityName) {
+        return getBaseClassName(entityName) + "Response";
     }
 
-    public String getResourceClassName(String projectName) {
-        return getBaseClassName(projectName) + "Resource";
+    public String getResourceClassName(String entityName) {
+        return getBaseClassName(entityName) + "Resource";
     }
 
-    public String getControllerClassName(String projectName) {
-        return getBaseClassName(projectName) + "Controller";
+    public String getControllerClassName(String entityName) {
+        return getBaseClassName(entityName) + "Controller";
     }
 
-    public String getRepositoryClassName(String projectName) {
-        return getBaseClassName(projectName) + "Repository";
+    public String getRepositoryClassName(String entityName) {
+        return getBaseClassName(entityName) + "Repository";
     }
 
-    public String getServiceClassName(String projectName) {
-        return getBaseClassName(projectName) + "Service";
+    public String getServiceClassName(String entityName) {
+        return getBaseClassName(entityName) + "Service";
     }
 
-    public String getMapperClassName(String projectName) {
-        return getBaseClassName(projectName) + "Mapper";
+    public String getMapperClassName(String entityName) {
+        return getBaseClassName(entityName) + "Mapper";
     }
 
-    public String getResourceVariableName(String projectName) {
-        return projectName + "Resource";
+    public String getResourceVariableName(String entityName) {
+        return entityName.toLowerCase() + "Resource";
     }
 
-    public String getResponseVariableName(String projectName) {
-        return projectName + "Response";
+    public String getResponseVariableName(String entityName) {
+        return entityName.toLowerCase() + "Response";
     }
 
-    public String getRepositoryVariableName(String projectName) {
-        return projectName + "Repository";
+    public String getRepositoryVariableName(String entityName) {
+        return entityName.toLowerCase() + "Repository";
     }
 
-    public String getServiceVariableName(String projectName) {
-        return projectName + "Service";
+    public String getServiceVariableName(String entityName) {
+        return entityName.toLowerCase() + "Service";
     }
 
-    public String getMapperVariableName(String projectName) {
-        return projectName + "Mapper";
+    public String getMapperVariableName(String entityName) {
+        return entityName.toLowerCase() + "Mapper";
     }
 
-    public String toEntityMethod(String projectName) {
-        return "to" + getBaseClassName(projectName);
+    public String toEntityMethod(String entityName) {
+        return "to" + getBaseClassName(entityName);
     }
 
-    public String toResponseMethod(String projectName) {
-        return "to" + getResponseClassName(projectName);
+    public String toResponseMethod(String entityName) {
+        return "to" + getResponseClassName(entityName);
     }
 
-    public String toResponseListMethod(String projectName) {
-        return "to" + getResponseClassName(projectName) + "List";
+    public String toResponseListMethod(String entityName) {
+        return "to" + getResponseClassName(entityName) + "List";
     }
 
 
@@ -74,24 +74,24 @@ public class NameUtils {
         return String.format("com.%s", projectName.toLowerCase());
     }
 
-    public String getResponseImportPath(String projectName) {
-        return  getRootImportPath(projectName) + ".domains." + getResponseClassName(projectName);
+    public String getResponseImportPath(String projectName, String entityName) {
+        return  getRootImportPath(projectName) + ".domains." + getResponseClassName(entityName);
     }
 
-    public String getResourceImportPath(String projectName) {
-        return  getRootImportPath(projectName) + ".domains." + getResourceClassName(projectName);
+    public String getResourceImportPath(String projectName, String entityName) {
+        return  getRootImportPath(projectName) + ".domains." + getResourceClassName(entityName);
     }
 
-    public String getEntityImportPath(String projectName) {
-        return  getRootImportPath(projectName) + ".domains." + getBaseClassName(projectName);
+    public String getEntityImportPath(String projectName, String entityName) {
+        return  getRootImportPath(projectName) + ".domains." + getBaseClassName(entityName);
     }
 
-    public String getRepositoryImportPath(String projectName) {
-        return  getRootImportPath(projectName) + ".repositories." + getRepositoryClassName(projectName);
+    public String getRepositoryImportPath(String projectName, String entityName) {
+        return  getRootImportPath(projectName) + ".repositories." + getRepositoryClassName(entityName);
     }
 
-    public String getServiceImportPath(String projectName) {
-        return  getRootImportPath(projectName) + ".services." + getServiceClassName(projectName);
+    public String getServiceImportPath(String projectName, String entityName) {
+        return  getRootImportPath(projectName) + ".services." + getServiceClassName(entityName);
     }
 
     public String getMainRootPath(String basePath, String projectName) {

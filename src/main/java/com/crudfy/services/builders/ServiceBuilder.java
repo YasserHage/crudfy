@@ -31,37 +31,37 @@ public class ServiceBuilder extends ClassOrInterfaceBuilder{
     @Autowired
     private ArgumentUtils argumentUtils;
 
-    public void buildMapper(String servicePath, String projectName) {
+    public void buildMapper(String servicePath, String projectName, String entityName) {
 
-        String interfaceName = nameUtils.getMapperClassName(projectName) ;
+        String interfaceName = nameUtils.getMapperClassName(entityName) ;
 
         CompilationUnit compilationUnit = initialize(nameUtils.getRootImportPath(projectName) + ".services", interfaceName, true);
         ClassOrInterfaceDeclaration mapperInterface = compilationUnit.getInterfaceByName(interfaceName).get();
 
         addImports(Arrays.asList(
-                nameUtils.getResponseImportPath(projectName),
-                nameUtils.getResourceImportPath(projectName),
-                nameUtils.getEntityImportPath(projectName),
+                nameUtils.getResponseImportPath(projectName, entityName),
+                nameUtils.getResourceImportPath(projectName, entityName),
+                nameUtils.getEntityImportPath(projectName, entityName),
                 "java.util.List",
                 "org.mapstruct.Mapper"));
         addMapperAnnotations(mapperInterface);
-        addMapperMethods(mapperInterface, projectName);
+        addMapperMethods(mapperInterface, entityName);
 
         write(servicePath, "Erro na escrita da interface Mapper");
     }
 
-    public void buildService(String servicePath, String projectName) {
+    public void buildService(String servicePath, String projectName, String entityName) {
 
-        String className = nameUtils.getServiceClassName(projectName) ;
+        String className = nameUtils.getServiceClassName(entityName) ;
 
         CompilationUnit compilationUnit = initialize(nameUtils.getRootImportPath(projectName) + ".services", className, false);
         ClassOrInterfaceDeclaration serviceClass = compilationUnit.getClassByName(className).get();
 
         addImports(Arrays.asList(
-                nameUtils.getEntityImportPath(projectName),
-                nameUtils.getResourceImportPath(projectName),
-                nameUtils.getResponseImportPath(projectName),
-                nameUtils.getRepositoryImportPath(projectName),
+                nameUtils.getEntityImportPath(projectName, entityName),
+                nameUtils.getResourceImportPath(projectName, entityName),
+                nameUtils.getResponseImportPath(projectName, entityName),
+                nameUtils.getRepositoryImportPath(projectName, entityName),
                 "java.util.List",
                 "java.util.Optional",
                 "java.util.ArrayList",
@@ -69,8 +69,8 @@ public class ServiceBuilder extends ClassOrInterfaceBuilder{
                 "org.springframework.beans.factory.annotation.Autowired"
         ));
         addAnnotation("Service");
-        addFields(serviceClass, projectName);
-        addServiceMethods(serviceClass, projectName);
+        addFields(serviceClass, entityName);
+        addServiceMethods(serviceClass, entityName);
 
         write(servicePath, "Erro na escrita da classe Service");
     }
@@ -79,79 +79,79 @@ public class ServiceBuilder extends ClassOrInterfaceBuilder{
         mapperInterface.addAnnotation(new NormalAnnotationExpr().addPair("componentModel", "\"spring\"").setName("Mapper"));
     }
 
-    private void addFields(ClassOrInterfaceDeclaration serviceClass, String projectName) {
+    private void addFields(ClassOrInterfaceDeclaration serviceClass, String entityName) {
 
-        serviceClass.addPrivateField(nameUtils.getRepositoryClassName(projectName), nameUtils.getRepositoryVariableName(projectName)).addAnnotation("Autowired");
-        serviceClass.addPrivateField(nameUtils.getMapperClassName(projectName), nameUtils.getMapperVariableName(projectName)).addAnnotation("Autowired");
+        serviceClass.addPrivateField(nameUtils.getRepositoryClassName(entityName), nameUtils.getRepositoryVariableName(entityName)).addAnnotation("Autowired");
+        serviceClass.addPrivateField(nameUtils.getMapperClassName(entityName), nameUtils.getMapperVariableName(entityName)).addAnnotation("Autowired");
     }
 
-    private void addMapperMethods(ClassOrInterfaceDeclaration mapperInterface, String projectName) {
+    private void addMapperMethods(ClassOrInterfaceDeclaration mapperInterface, String entityName) {
 
-        addToEntityMethod(mapperInterface, projectName);
-        addToResponseMethod(mapperInterface, projectName);
-        addToResponseListMethod(mapperInterface, projectName);
+        addToEntityMethod(mapperInterface, entityName);
+        addToResponseMethod(mapperInterface, entityName);
+        addToResponseListMethod(mapperInterface, entityName);
     }
 
-    private void addToEntityMethod(ClassOrInterfaceDeclaration mapperInterface, String projectName) {
+    private void addToEntityMethod(ClassOrInterfaceDeclaration mapperInterface, String entityName) {
 
         Parameter parameter = new Parameter();
-        parameter.setType(typeUtils.getClassOrInterfaceType(nameUtils.getResourceClassName(projectName)));
-        parameter.setName(nameUtils.getResourceVariableName(projectName));
+        parameter.setType(typeUtils.getClassOrInterfaceType(nameUtils.getResourceClassName(entityName)));
+        parameter.setName(nameUtils.getResourceVariableName(entityName));
 
-        MethodDeclaration toEntityMethod = mapperInterface.addMethod(nameUtils.toEntityMethod(projectName));
-        toEntityMethod.setType(typeUtils.getClassOrInterfaceType(nameUtils.getBaseClassName(projectName)));
+        MethodDeclaration toEntityMethod = mapperInterface.addMethod(nameUtils.toEntityMethod(entityName));
+        toEntityMethod.setType(typeUtils.getClassOrInterfaceType(nameUtils.getBaseClassName(entityName)));
         toEntityMethod.addParameter(parameter);
         toEntityMethod.setBody(null);
     }
 
-    private void addToResponseMethod(ClassOrInterfaceDeclaration mapperInterface, String projectName) {
+    private void addToResponseMethod(ClassOrInterfaceDeclaration mapperInterface, String entityName) {
 
         Parameter parameter = new Parameter();
-        parameter.setType(typeUtils.getClassOrInterfaceType(nameUtils.getBaseClassName(projectName)));
-        parameter.setName(projectName);
+        parameter.setType(typeUtils.getClassOrInterfaceType(nameUtils.getBaseClassName(entityName)));
+        parameter.setName(entityName);
 
-        MethodDeclaration toResponseMethod = mapperInterface.addMethod(nameUtils.toResponseMethod(projectName));
-        toResponseMethod.setType(typeUtils.getClassOrInterfaceType(nameUtils.getResponseClassName(projectName)));
+        MethodDeclaration toResponseMethod = mapperInterface.addMethod(nameUtils.toResponseMethod(entityName));
+        toResponseMethod.setType(typeUtils.getClassOrInterfaceType(nameUtils.getResponseClassName(entityName)));
         toResponseMethod.addParameter(parameter);
         toResponseMethod.setBody(null);
     }
 
-    private void addToResponseListMethod(ClassOrInterfaceDeclaration mapperInterface, String projectName) {
+    private void addToResponseListMethod(ClassOrInterfaceDeclaration mapperInterface, String entityName) {
 
         Parameter parameter = new Parameter();
-        parameter.setType(typeUtils.getClassOrInterfaceType(String.format("List<%s>", nameUtils.getBaseClassName(projectName))));
-        parameter.setName(projectName + "List");
+        parameter.setType(typeUtils.getClassOrInterfaceType(String.format("List<%s>", nameUtils.getBaseClassName(entityName))));
+        parameter.setName(entityName + "List");
 
-        MethodDeclaration toResponseListMethod = mapperInterface.addMethod(nameUtils.toResponseListMethod(projectName));
-        toResponseListMethod.setType(typeUtils.getClassOrInterfaceType(String.format("List<%s>", nameUtils.getResponseClassName(projectName))));
+        MethodDeclaration toResponseListMethod = mapperInterface.addMethod(nameUtils.toResponseListMethod(entityName));
+        toResponseListMethod.setType(typeUtils.getClassOrInterfaceType(String.format("List<%s>", nameUtils.getResponseClassName(entityName))));
         toResponseListMethod.addParameter(parameter);
         toResponseListMethod.setBody(null);
     }
 
-    private void addServiceMethods(ClassOrInterfaceDeclaration serviceClass, String projectName) {
+    private void addServiceMethods(ClassOrInterfaceDeclaration serviceClass, String entityName) {
 
-        addFindMethod(serviceClass, projectName);
-        addFindAllMethod(serviceClass, projectName);
-        addSaveMethod(serviceClass, projectName);
-        addDeleteMethod(serviceClass, projectName);
+        addFindMethod(serviceClass, entityName);
+        addFindAllMethod(serviceClass, entityName);
+        addSaveMethod(serviceClass, entityName);
+        addDeleteMethod(serviceClass, entityName);
     }
 
-    private void addFindMethod(ClassOrInterfaceDeclaration serviceClass, String projectName) {
+    private void addFindMethod(ClassOrInterfaceDeclaration serviceClass, String entityName) {
 
-        ClassOrInterfaceType optionalResponse = typeUtils.getClassOrInterfaceType(String.format("Optional<%s>", nameUtils.getResponseClassName(projectName)));
-        ClassOrInterfaceType optionalEntity = typeUtils.getClassOrInterfaceType(String.format("Optional<%s>", nameUtils.getBaseClassName(projectName)));
+        ClassOrInterfaceType optionalResponse = typeUtils.getClassOrInterfaceType(String.format("Optional<%s>", nameUtils.getResponseClassName(entityName)));
+        ClassOrInterfaceType optionalEntity = typeUtils.getClassOrInterfaceType(String.format("Optional<%s>", nameUtils.getBaseClassName(entityName)));
 
         VariableDeclarator entityDeclaration = new VariableDeclarator(
                 optionalEntity,
-                projectName,
-                new MethodCallExpr(new NameExpr(nameUtils.getRepositoryVariableName(projectName)), "findById", argumentUtils.buildNameArgument("id")));
+                entityName,
+                new MethodCallExpr(new NameExpr(nameUtils.getRepositoryVariableName(entityName)), "findById", argumentUtils.buildNameArgument("id")));
 
-        MethodCallExpr getExpr = new MethodCallExpr(new NameExpr(projectName), "get");
+        MethodCallExpr getExpr = new MethodCallExpr(new NameExpr(entityName), "get");
         MethodCallExpr toResponse =  new MethodCallExpr(
-                new NameExpr(nameUtils.getMapperVariableName(projectName)),
-                nameUtils.toResponseMethod(projectName),
+                new NameExpr(nameUtils.getMapperVariableName(entityName)),
+                nameUtils.toResponseMethod(entityName),
                 argumentUtils.buildArguments(getExpr));
-        MethodCallExpr isPresent = new MethodCallExpr(new NameExpr(projectName), "isPresent");
+        MethodCallExpr isPresent = new MethodCallExpr(new NameExpr(entityName), "isPresent");
         MethodCallExpr toOptional = new MethodCallExpr(new NameExpr("Optional"),"of", argumentUtils.buildArguments(toResponse));
         MethodCallExpr empty = new MethodCallExpr(new NameExpr("Optional"), "empty");
 
@@ -165,21 +165,21 @@ public class ServiceBuilder extends ClassOrInterfaceBuilder{
         findMethod.setBody(blockStmt);
     }
 
-    private void addFindAllMethod(ClassOrInterfaceDeclaration serviceClass, String projectName) {
+    private void addFindAllMethod(ClassOrInterfaceDeclaration serviceClass, String entityName) {
 
-        String variableName = projectName + "List";
+        String variableName = entityName + "List";
 
         VariableDeclarator listDeclaration = new VariableDeclarator(
-                typeUtils.getClassOrInterfaceType(String.format("List<%s>", nameUtils.getBaseClassName(projectName))),
+                typeUtils.getClassOrInterfaceType(String.format("List<%s>", nameUtils.getBaseClassName(entityName))),
                 variableName,
                 new ObjectCreationExpr().setType(typeUtils.getClassOrInterfaceType("ArrayList")));
 
         MethodReferenceExpr addExpr = new MethodReferenceExpr().setScope(new NameExpr(variableName)).setIdentifier("add");
-        MethodCallExpr findAllExpr = new MethodCallExpr(new NameExpr(nameUtils.getRepositoryVariableName(projectName)), "findAll");
+        MethodCallExpr findAllExpr = new MethodCallExpr(new NameExpr(nameUtils.getRepositoryVariableName(entityName)), "findAll");
         MethodCallExpr iterationFunction = new MethodCallExpr(findAllExpr, "forEach", argumentUtils.buildArguments(addExpr));
 
-        MethodCallExpr toResponse = new MethodCallExpr(new NameExpr(nameUtils.getMapperVariableName(projectName)),
-                nameUtils.toResponseListMethod(projectName),
+        MethodCallExpr toResponse = new MethodCallExpr(new NameExpr(nameUtils.getMapperVariableName(entityName)),
+                nameUtils.toResponseListMethod(entityName),
                 argumentUtils.buildNameArgument(variableName));
 
         BlockStmt blockStmt = new BlockStmt();
@@ -188,27 +188,27 @@ public class ServiceBuilder extends ClassOrInterfaceBuilder{
         blockStmt.addStatement(new ReturnStmt(toResponse));
 
         MethodDeclaration findAllMethod = serviceClass.addMethod("findAll", Modifier.Keyword.PUBLIC);
-        findAllMethod.setType(typeUtils.getClassOrInterfaceType(String.format("List<%s>", nameUtils.getResponseClassName(projectName))));
+        findAllMethod.setType(typeUtils.getClassOrInterfaceType(String.format("List<%s>", nameUtils.getResponseClassName(entityName))));
         findAllMethod.setBody(blockStmt);
     }
 
-    private void addSaveMethod(ClassOrInterfaceDeclaration serviceClass, String projectName) {
+    private void addSaveMethod(ClassOrInterfaceDeclaration serviceClass, String entityName) {
 
         MethodCallExpr toEntity = new MethodCallExpr(
-                new NameExpr(nameUtils.getMapperVariableName(projectName)),
-                nameUtils.toEntityMethod(projectName),
-                argumentUtils.buildNameArgument(nameUtils.getResourceVariableName(projectName)));
+                new NameExpr(nameUtils.getMapperVariableName(entityName)),
+                nameUtils.toEntityMethod(entityName),
+                argumentUtils.buildNameArgument(nameUtils.getResourceVariableName(entityName)));
         VariableDeclarator entityDeclaration = new VariableDeclarator(
-                typeUtils.getClassOrInterfaceType(nameUtils.getBaseClassName(projectName)),
-                projectName,
+                typeUtils.getClassOrInterfaceType(nameUtils.getBaseClassName(entityName)),
+                entityName,
                 toEntity);
 
         MethodCallExpr saveExpr = new MethodCallExpr(
-                new NameExpr(nameUtils.getRepositoryVariableName(projectName)),
+                new NameExpr(nameUtils.getRepositoryVariableName(entityName)),
                 "save",
-                argumentUtils.buildNameArgument(projectName));
-        MethodCallExpr toResponse = new MethodCallExpr(new NameExpr(nameUtils.getMapperVariableName(projectName)),
-                nameUtils.toResponseMethod(projectName),
+                argumentUtils.buildNameArgument(entityName));
+        MethodCallExpr toResponse = new MethodCallExpr(new NameExpr(nameUtils.getMapperVariableName(entityName)),
+                nameUtils.toResponseMethod(entityName),
                 argumentUtils.buildArguments(saveExpr));
 
         BlockStmt blockStmt = new BlockStmt();
@@ -216,14 +216,14 @@ public class ServiceBuilder extends ClassOrInterfaceBuilder{
         blockStmt.addStatement(new ReturnStmt(toResponse));
 
         MethodDeclaration saveMethod = serviceClass.addMethod("save", Modifier.Keyword.PUBLIC);
-        saveMethod.setType(typeUtils.getClassOrInterfaceType(nameUtils.getResponseClassName(projectName)));
-        saveMethod.addParameter(buildResourceParameter(projectName));
+        saveMethod.setType(typeUtils.getClassOrInterfaceType(nameUtils.getResponseClassName(entityName)));
+        saveMethod.addParameter(buildResourceParameter(entityName));
         saveMethod.setBody(blockStmt);
     }
 
-    private void addDeleteMethod(ClassOrInterfaceDeclaration serviceClass, String projectName) {
+    private void addDeleteMethod(ClassOrInterfaceDeclaration serviceClass, String entityName) {
 
-        MethodCallExpr deleteExpr =  new MethodCallExpr(new NameExpr(nameUtils.getRepositoryVariableName(projectName)), "deleteById", argumentUtils.buildNameArgument("id"));
+        MethodCallExpr deleteExpr =  new MethodCallExpr(new NameExpr(nameUtils.getRepositoryVariableName(entityName)), "deleteById", argumentUtils.buildNameArgument("id"));
 
         BlockStmt blockStmt = new BlockStmt();
         blockStmt.addStatement(deleteExpr);
@@ -241,10 +241,10 @@ public class ServiceBuilder extends ClassOrInterfaceBuilder{
         return parameter;
     }
 
-    private Parameter buildResourceParameter(String projectName) {
+    private Parameter buildResourceParameter(String entityName) {
         Parameter parameter = new Parameter();
-        parameter.setType(typeUtils.getClassOrInterfaceType(nameUtils.getResourceClassName(projectName)));
-        parameter.setName(nameUtils.getResourceVariableName(projectName));
+        parameter.setType(typeUtils.getClassOrInterfaceType(nameUtils.getResourceClassName(entityName)));
+        parameter.setName(nameUtils.getResourceVariableName(entityName));
         return parameter;
     }
 }
