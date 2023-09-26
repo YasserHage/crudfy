@@ -1,5 +1,6 @@
 package com.crudfy.services.builders;
 
+import com.crudfy.domains.resources.Structure;
 import com.crudfy.services.utils.ArgumentUtils;
 import com.crudfy.services.utils.NameUtils;
 import com.crudfy.services.utils.TypeUtils;
@@ -18,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
+import java.util.Locale;
 
 @Service
 public class ServiceBuilder extends ClassOrInterfaceBuilder{
@@ -31,17 +33,17 @@ public class ServiceBuilder extends ClassOrInterfaceBuilder{
     @Autowired
     private ArgumentUtils argumentUtils;
 
-    public void buildMapper(String servicePath, String projectName, String entityName) {
+    public void buildMapper(String servicePath, String projectName, String entityName, Structure projectStructure) {
 
         String interfaceName = nameUtils.getMapperClassName(entityName) ;
 
-        CompilationUnit compilationUnit = initialize(nameUtils.getRootImportPath(projectName) + ".services", interfaceName, true);
+        CompilationUnit compilationUnit = initialize(nameUtils.getBaseServiceImportPath(projectName, entityName, projectStructure), interfaceName, true);
         ClassOrInterfaceDeclaration mapperInterface = compilationUnit.getInterfaceByName(interfaceName).get();
 
         addImports(Arrays.asList(
-                nameUtils.getResponseImportPath(projectName, entityName),
-                nameUtils.getResourceImportPath(projectName, entityName),
-                nameUtils.getEntityImportPath(projectName, entityName),
+                nameUtils.getResponseImportPath(projectName, entityName, projectStructure),
+                nameUtils.getResourceImportPath(projectName, entityName, projectStructure),
+                nameUtils.getEntityImportPath(projectName, entityName, projectStructure),
                 "java.util.List",
                 "org.mapstruct.Mapper"));
         addMapperAnnotations(mapperInterface);
@@ -50,18 +52,18 @@ public class ServiceBuilder extends ClassOrInterfaceBuilder{
         write(servicePath, "Erro na escrita da interface Mapper");
     }
 
-    public void buildService(String servicePath, String projectName, String entityName) {
+    public void buildService(String servicePath, String projectName, String entityName, Structure projectStructure) {
 
         String className = nameUtils.getServiceClassName(entityName) ;
 
-        CompilationUnit compilationUnit = initialize(nameUtils.getRootImportPath(projectName) + ".services", className, false);
+        CompilationUnit compilationUnit = initialize(nameUtils.getBaseServiceImportPath(projectName, entityName, projectStructure), className, false);
         ClassOrInterfaceDeclaration serviceClass = compilationUnit.getClassByName(className).get();
 
         addImports(Arrays.asList(
-                nameUtils.getEntityImportPath(projectName, entityName),
-                nameUtils.getResourceImportPath(projectName, entityName),
-                nameUtils.getResponseImportPath(projectName, entityName),
-                nameUtils.getRepositoryImportPath(projectName, entityName),
+                nameUtils.getEntityImportPath(projectName, entityName, projectStructure),
+                nameUtils.getResourceImportPath(projectName, entityName, projectStructure),
+                nameUtils.getResponseImportPath(projectName, entityName, projectStructure),
+                nameUtils.getRepositoryImportPath(projectName, entityName, projectStructure),
                 "java.util.List",
                 "java.util.Optional",
                 "java.util.ArrayList",
@@ -108,7 +110,7 @@ public class ServiceBuilder extends ClassOrInterfaceBuilder{
 
         Parameter parameter = new Parameter();
         parameter.setType(typeUtils.getClassOrInterfaceType(nameUtils.getBaseClassName(entityName)));
-        parameter.setName(entityName);
+        parameter.setName(entityName.toLowerCase());
 
         MethodDeclaration toResponseMethod = mapperInterface.addMethod(nameUtils.toResponseMethod(entityName));
         toResponseMethod.setType(typeUtils.getClassOrInterfaceType(nameUtils.getResponseClassName(entityName)));
@@ -120,7 +122,7 @@ public class ServiceBuilder extends ClassOrInterfaceBuilder{
 
         Parameter parameter = new Parameter();
         parameter.setType(typeUtils.getClassOrInterfaceType(String.format("List<%s>", nameUtils.getBaseClassName(entityName))));
-        parameter.setName(entityName + "List");
+        parameter.setName(entityName.toLowerCase() + "List");
 
         MethodDeclaration toResponseListMethod = mapperInterface.addMethod(nameUtils.toResponseListMethod(entityName));
         toResponseListMethod.setType(typeUtils.getClassOrInterfaceType(String.format("List<%s>", nameUtils.getResponseClassName(entityName))));
@@ -143,15 +145,15 @@ public class ServiceBuilder extends ClassOrInterfaceBuilder{
 
         VariableDeclarator entityDeclaration = new VariableDeclarator(
                 optionalEntity,
-                entityName,
+                entityName.toLowerCase(),
                 new MethodCallExpr(new NameExpr(nameUtils.getRepositoryVariableName(entityName)), "findById", argumentUtils.buildNameArgument("id")));
 
-        MethodCallExpr getExpr = new MethodCallExpr(new NameExpr(entityName), "get");
+        MethodCallExpr getExpr = new MethodCallExpr(new NameExpr(entityName.toLowerCase()), "get");
         MethodCallExpr toResponse =  new MethodCallExpr(
                 new NameExpr(nameUtils.getMapperVariableName(entityName)),
                 nameUtils.toResponseMethod(entityName),
                 argumentUtils.buildArguments(getExpr));
-        MethodCallExpr isPresent = new MethodCallExpr(new NameExpr(entityName), "isPresent");
+        MethodCallExpr isPresent = new MethodCallExpr(new NameExpr(entityName.toLowerCase()), "isPresent");
         MethodCallExpr toOptional = new MethodCallExpr(new NameExpr("Optional"),"of", argumentUtils.buildArguments(toResponse));
         MethodCallExpr empty = new MethodCallExpr(new NameExpr("Optional"), "empty");
 
@@ -167,7 +169,7 @@ public class ServiceBuilder extends ClassOrInterfaceBuilder{
 
     private void addFindAllMethod(ClassOrInterfaceDeclaration serviceClass, String entityName) {
 
-        String variableName = entityName + "List";
+        String variableName = entityName.toLowerCase() + "List";
 
         VariableDeclarator listDeclaration = new VariableDeclarator(
                 typeUtils.getClassOrInterfaceType(String.format("List<%s>", nameUtils.getBaseClassName(entityName))),
@@ -200,13 +202,13 @@ public class ServiceBuilder extends ClassOrInterfaceBuilder{
                 argumentUtils.buildNameArgument(nameUtils.getResourceVariableName(entityName)));
         VariableDeclarator entityDeclaration = new VariableDeclarator(
                 typeUtils.getClassOrInterfaceType(nameUtils.getBaseClassName(entityName)),
-                entityName,
+                entityName.toLowerCase(),
                 toEntity);
 
         MethodCallExpr saveExpr = new MethodCallExpr(
                 new NameExpr(nameUtils.getRepositoryVariableName(entityName)),
                 "save",
-                argumentUtils.buildNameArgument(entityName));
+                argumentUtils.buildNameArgument(entityName.toLowerCase()));
         MethodCallExpr toResponse = new MethodCallExpr(new NameExpr(nameUtils.getMapperVariableName(entityName)),
                 nameUtils.toResponseMethod(entityName),
                 argumentUtils.buildArguments(saveExpr));

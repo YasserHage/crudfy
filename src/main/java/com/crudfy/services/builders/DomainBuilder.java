@@ -2,6 +2,7 @@ package com.crudfy.services.builders;
 
 import com.crudfy.domains.resources.Database;
 import com.crudfy.domains.resources.Field;
+import com.crudfy.domains.resources.Structure;
 import com.crudfy.services.utils.ImportsMapper;
 import com.crudfy.services.utils.NameUtils;
 import com.github.javaparser.JavaParser;
@@ -25,10 +26,10 @@ public class DomainBuilder extends ClassOrInterfaceBuilder{
     @Autowired
     private NameUtils nameUtils;
 
-    public void buildResponse(String domainPath, String projectName, String entityName, List<Field> fields) {
+    public void buildResponse(String domainPath, String projectName, String entityName, List<Field> fields, Structure projectStructure) {
 
         String className = nameUtils.getResponseClassName(entityName) ;
-        CompilationUnit compilationUnit = initialize(nameUtils.getRootImportPath(projectName) + ".domains", className, false);
+        CompilationUnit compilationUnit = initialize(nameUtils.getDomainImportPath(projectName, entityName, projectStructure), className, false);
         ClassOrInterfaceDeclaration responseClass = compilationUnit.getClassByName(className).get();
 
         buildDomainClass(responseClass, fields);
@@ -36,10 +37,10 @@ public class DomainBuilder extends ClassOrInterfaceBuilder{
         write(domainPath, "Erro na escrita da classe Response");
     }
 
-    public void buildResource(String domainPath, String projectName, String entityName, List<Field> fields) {
+    public void buildResource(String domainPath, String projectName, String entityName, List<Field> fields, Structure projectStructure) {
 
         String className = nameUtils.getResourceClassName(entityName);
-        CompilationUnit compilationUnit = initialize(nameUtils.getRootImportPath(projectName) + ".domains", className, false);
+        CompilationUnit compilationUnit = initialize(nameUtils.getDomainImportPath(projectName, entityName, projectStructure), className, false);
         ClassOrInterfaceDeclaration resourceClass = compilationUnit.getClassByName(className).get();
 
         buildDomainClass(resourceClass, fields);
@@ -47,10 +48,10 @@ public class DomainBuilder extends ClassOrInterfaceBuilder{
         write(domainPath, "Erro na escrita da classe Resource");
     }
 
-    public void buildEntity(String domainPath, String projectName, String entityName, List<Field> fields, Database database) {
+    public void buildEntity(String domainPath, String projectName, String entityName, List<Field> fields, Database database, Structure projectStructure) {
 
         String className = nameUtils.getBaseClassName(entityName);
-        CompilationUnit compilationUnit = initialize(nameUtils.getRootImportPath(projectName) + ".domains", className, false);
+        CompilationUnit compilationUnit = initialize(nameUtils.getDomainImportPath(projectName, entityName, projectStructure), className, false);
         ClassOrInterfaceDeclaration entityClass = compilationUnit.getClassByName(className).get();
 
         switch (database) {
@@ -58,13 +59,13 @@ public class DomainBuilder extends ClassOrInterfaceBuilder{
                 addImports(Arrays.asList(
                         "org.springframework.data.mongodb.core.mapping.Document"
                 ));
-                addAnnotation("Document", Map.of("value", "\"" + entityName + "\""));
+                addAnnotation("Document", Map.of("value", "\"" + entityName.toLowerCase() + "\""));
                 break;
             case ELASTICSEARCH:
                 addImports(Arrays.asList(
                         "org.springframework.data.elasticsearch.annotations.Document"
                 ));
-                addAnnotation("Document", Map.of("indexName", "\"" + entityName + "\""));
+                addAnnotation("Document", Map.of("indexName", "\"" + entityName.toLowerCase() + "\""));
                 break;
             default:
                 addImports(Arrays.asList(
