@@ -1,6 +1,7 @@
 package com.crudfy.services.builders;
 
 import com.crudfy.domains.resources.Database;
+import com.crudfy.domains.resources.Structure;
 import com.crudfy.services.utils.NameUtils;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
@@ -15,15 +16,15 @@ public class RepositoryBuilder extends ClassOrInterfaceBuilder{
     @Autowired
     private NameUtils nameUtils;
 
-    public void buildRepository(String repositoryPath, String projectName, String entityName, Database database) {
+    public void buildRepository(String repositoryPath, String projectName, String entityName, Database database, Structure projectStructure) {
 
         String interfaceName = nameUtils.getRepositoryClassName(entityName) ;
 
-        CompilationUnit compilationUnit = initialize(nameUtils.getRootImportPath(projectName) + ".repositories", interfaceName,true);
+        CompilationUnit compilationUnit = initialize(nameUtils.getRepositoryBaseImportPath(projectName, entityName, projectStructure), interfaceName,true);
         ClassOrInterfaceDeclaration repositoryInterface = compilationUnit.getInterfaceByName(interfaceName).get();
 
         addImports(Arrays.asList(
-                nameUtils.getEntityImportPath(projectName, entityName),
+                nameUtils.getEntityImportPath(projectName, entityName, projectStructure),
                 "org.springframework.stereotype.Repository"));
 
         switch (database) {

@@ -1,10 +1,7 @@
 package com.crudfy.services;
 
 import com.crudfy.domains.exceptions.ResourceValidationException;
-import com.crudfy.domains.resources.ComponentResource;
-import com.crudfy.domains.resources.Database;
-import com.crudfy.domains.resources.Entity;
-import com.crudfy.domains.resources.Field;
+import com.crudfy.domains.resources.*;
 import com.crudfy.services.builders.ControllerBuilder;
 import com.crudfy.services.builders.DomainBuilder;
 import com.crudfy.services.builders.RepositoryBuilder;
@@ -38,6 +35,9 @@ import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
+import static com.crudfy.domains.resources.Structure.DOMAIN;
+import static com.crudfy.domains.resources.Structure.LAYER;
+
 @Service
 public class CrudService {
 
@@ -63,14 +63,36 @@ public class CrudService {
         verifyResource(resource);
         String basePath = resource.getPath();
         String projectName = resource.getProjectName();
+        Structure projectStructure = resource.getProjectStructure();
 
-        createBaseProject(basePath, projectName, resource.getDatabase());
-        for (Entity entity : resource.getEntities()) {
-            createDomainClasses(basePath, projectName, entity.getName().toLowerCase(), entity.getFields(), resource.getDatabase());
-            createRepositoryClasses(basePath, projectName, entity.getName().toLowerCase(), resource.getDatabase());
-            createControllerClasses(basePath, projectName, entity.getName().toLowerCase());
-            createServiceClasses(basePath, projectName, entity.getName().toLowerCase());
+        if (LAYER.equals(projectStructure)) {
+            createLayerStructurePackages(basePath, projectName, null);
+        } else {
+            createDomainStructurePackages(basePath, projectName, resource.getEntities());
         }
+        createBaseProject(basePath, projectName, resource.getDatabase());
+
+        for (Entity entity : resource.getEntities()) {
+            String entityName = entity.getName();
+            createDomainClasses(resource, entity);
+            createRepositoryClasses(basePath, projectName, entityName, resource.getDatabase(), projectStructure);
+            createControllerClasses(basePath, projectName, entityName, projectStructure);
+            createServiceClasses(basePath, projectName, entityName, projectStructure);
+        }
+    }
+
+    private void createLayerStructurePackages(String basePath, String projectName, String entityName) {
+        new File(nameUtils.getControllerPath(basePath, projectName, entityName)).mkdirs();
+        new File(nameUtils.getServicePath(basePath, projectName, entityName)).mkdir();
+        new File(nameUtils.getDomainPath(basePath, projectName, entityName)).mkdir();
+        new File(nameUtils.getRepositoryPath(basePath, projectName, entityName)).mkdir();
+    }
+
+    private void createDomainStructurePackages(String basePath, String projectName, List<Entity> entities) {
+        entities.stream().map(Entity::getName).forEach(entityName -> {
+            new File(nameUtils.getEntityRootPath(basePath, projectName, entityName)).mkdirs();
+            createLayerStructurePackages(basePath, projectName, entityName);
+        });
     }
 
     private void verifyResource(ComponentResource resource) {
@@ -89,40 +111,44 @@ public class CrudService {
         }
     }
 
-    private void createServiceClasses(String basePath, String projectName, String entityName) {
+    private void createServiceClasses(String basePath, String projectName, String entityName, Structure projectStructure) {
 
-        String servicePath = nameUtils.getServicePath(basePath, projectName);
-        serviceBuilder.buildMapper(servicePath, projectName, entityName);
-        serviceBuilder.buildService(servicePath, projectName, entityName);
+        String servicePath = nameUtils.getServicePath(
+                basePath, projectName, LAYER.equals(projectStructure) ? null : entityName);
+        serviceBuilder.buildMapper(servicePath, projectName, entityName, projectStructure);
+        serviceBuilder.buildService(servicePath, projectName, entityName, projectStructure);
     }
 
-    private void createRepositoryClasses(String basePath, String projectName, String entityName, Database database) {
+    private void createRepositoryClasses(String basePath, String projectName, String entityName, Database database, Structure projectStructure) {
 
-        String repositoryPath = nameUtils.getRepositoryPath(basePath, projectName);
-        repositoryBuilder.buildRepository(repositoryPath, projectName, entityName, database);
+        String repositoryPath = nameUtils.getRepositoryPath(
+                basePath, projectName, LAYER.equals(projectStructure) ? null : entityName);
+        repositoryBuilder.buildRepository(repositoryPath, projectName, entityName, database, projectStructure);
     }
 
-    private void createDomainClasses(String basePath, String projectName, String entityName, List<Field> fields, Database database) {
+    private void createDomainClasses(ComponentResource resource, Entity entity) {
 
-        String domainPath = nameUtils.getDomainPath(basePath, projectName);
-        domainBuilder.buildResponse(domainPath, projectName, entityName, fields);
-        domainBuilder.buildResource(domainPath, projectName, entityName, fields);
-        domainBuilder.buildEntity(domainPath, projectName, entityName, fields, database);
+        String entityName = entity.getName();
+        List<Field> fields = entity.getFields();
+        String projectName = resource.getProjectName();
+        Structure projectStructure = resource.getProjectStructure();
+
+        String domainPath = nameUtils.getDomainPath(
+                resource.getPath(), projectName, LAYER.equals(resource.getProjectStructure()) ? null : entity.getName());
+        domainBuilder.buildResponse(domainPath, projectName, entityName, fields, projectStructure);
+        domainBuilder.buildResource(domainPath, projectName, entityName, fields, projectStructure);
+        domainBuilder.buildEntity(domainPath, projectName, entityName, fields, resource.getDatabase(), projectStructure);
     }
 
-    private void createControllerClasses(String basePath, String projectName, String entityName) {
+    private void createControllerClasses(String basePath, String projectName, String entityName, Structure projectStructure) {
 
-        String controllerPath = nameUtils.getControllerPath(basePath, projectName);
-        controllerBuilder.buildController(controllerPath, projectName, entityName);
+        String controllerPath = nameUtils.getControllerPath(basePath, projectName, LAYER.equals(projectStructure) ? null : entityName);
+        controllerBuilder.buildController(controllerPath, projectName, entityName, projectStructure);
     }
 
     private void createBaseProject(String basePath, String projectName, Database database) {
 
         new File(nameUtils.getResourcePath(basePath)).mkdirs();
-        new File(nameUtils.getControllerPath(basePath, projectName)).mkdirs();
-        new File(nameUtils.getServicePath(basePath, projectName)).mkdir();
-        new File(nameUtils.getDomainPath(basePath, projectName)).mkdir();
-        new File(nameUtils.getRepositoryPath(basePath, projectName)).mkdir();
         new File(nameUtils.getTestRootPath(basePath, projectName)).mkdirs();
 
         createMainClass(basePath, projectName);

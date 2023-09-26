@@ -1,5 +1,6 @@
 package com.crudfy.services.builders;
 
+import com.crudfy.domains.resources.Structure;
 import com.crudfy.services.utils.ArgumentUtils;
 import com.crudfy.services.utils.NameUtils;
 import com.crudfy.services.utils.TypeUtils;
@@ -22,6 +23,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
 
+import static com.crudfy.domains.resources.Structure.LAYER;
+
 @Service
 public class ControllerBuilder extends ClassOrInterfaceBuilder{
 
@@ -34,16 +37,19 @@ public class ControllerBuilder extends ClassOrInterfaceBuilder{
     @Autowired
     private ArgumentUtils argumentUtils;
 
-    public void buildController(String controllerPath, String projectName, String entityName) {
+    public void buildController(String controllerPath, String projectName, String entityName, Structure projectStructure) {
 
-        String className = nameUtils.getControllerClassName(entityName) ;
-        CompilationUnit compilationUnit = initialize(nameUtils.getRootImportPath(projectName) + ".controllers", className, false);
+        String className = nameUtils.getControllerClassName(entityName);
+        String packagePath = LAYER.equals(projectStructure)
+                ? nameUtils.getRootImportPath(projectName) + ".controllers"
+                : String.format("%s.%s.controllers", nameUtils.getRootImportPath(projectName), entityName.toLowerCase());
+        CompilationUnit compilationUnit = initialize(packagePath, className, false);
         ClassOrInterfaceDeclaration controllerClass = compilationUnit.getClassByName(className).get();
 
         addImports(Arrays.asList(
-                nameUtils.getResourceImportPath(projectName, entityName),
-                nameUtils.getResponseImportPath(projectName, entityName),
-                nameUtils.getServiceImportPath(projectName, entityName),
+                nameUtils.getResourceImportPath(projectName, entityName, projectStructure),
+                nameUtils.getResponseImportPath(projectName, entityName, projectStructure),
+                nameUtils.getServiceImportPath(projectName, entityName, projectStructure),
                 "org.springframework.beans.factory.annotation.Autowired",
                 "org.springframework.web.bind.annotation.*",
                 "org.springframework.stereotype.Controller",
@@ -62,7 +68,7 @@ public class ControllerBuilder extends ClassOrInterfaceBuilder{
 
     private void addControllerAnnotations(ClassOrInterfaceDeclaration controllerClass, String entityName) {
         controllerClass.addAnnotation("Controller");
-        controllerClass.addSingleMemberAnnotation("RequestMapping", "\"/" + entityName + "\"");
+        controllerClass.addSingleMemberAnnotation("RequestMapping", "\"/" + entityName.toLowerCase() + "\"");
     }
 
     private void addFields(ClassOrInterfaceDeclaration controllerClass, String entityName) {
