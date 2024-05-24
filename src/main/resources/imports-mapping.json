@@ -1,5 +1,6 @@
 {
-  "LocalDate": ["java.time.LocalDate"],
-  "List<String>": ["java.util.List"],
-  "List<LocalDate>": ["java.util.List", "java.time.LocalDate"]
+  "List": "java.util.List",
+  "Map": "java.util.Map",
+  "LocalDate": "java.time.LocalDate",
+  "LocalDateTime": "java.time.LocalDateTime"
 }
