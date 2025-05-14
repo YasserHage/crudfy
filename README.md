@@ -1,14 +1,24 @@
 
-# crudfy
+# Java CRUD Project Generator (Crudfy)
 
-#### PT:
+This is a utility tool designed to accelerate the development of CRUD APIs using [**Spring Data**](https://spring.io/projects/spring-data) for several Databases.  
+It uses [**JavaParser**](https://javaparser.org/) to dynamically generate Java classes and project structure based on user input.
 
-Essa é uma ferramenta utilitaria para agilizar o desenvolvimento de APIs CRUD, utilizando spring-jpa. O projeto gerado tem toda a estrutura de controller, service, domain, repository e o arquivo pom.xml
+The generated project includes:
 
-1. **Gerando a API**  
-   Utilizando uma requisição POST "/crud" com o body usando a seguinte estrutura:
+- Controller  
+- Service  
+- Domain (Entities and DTOs)  
+- Repository  
+- `pom.xml` file (Maven configuration)
 
-  ```
+---
+
+## 🔧 How to Generate a CRUD API
+
+Make a `POST` request to the `/crud` endpoint with a JSON body in the following format:
+
+  ``` json
 {
     "path": "C:\\My\\Path",
     "projectName": "projectName",
@@ -24,7 +34,7 @@ Essa é uma ferramenta utilitaria para agilizar o desenvolvimento de APIs CRUD, 
           },
           {
             "name": "field1",
-            "type": "String"
+            "type": "List<String>"
           },
           {
             "name": "field2",
@@ -32,19 +42,61 @@ Essa é uma ferramenta utilitaria para agilizar o desenvolvimento de APIs CRUD, 
           },
           {
             "name": "field3",
+            "type": "OtherEntity",
+            "isSubEntity" : true
+          },
+          {
+            "name": "field4",
             "type": "LocalDate"
+          }
+        ]
+      },
+      {
+        "name": "otherEntity",
+        "fields": [
+          {
+            "name": "field",
+            "type": "String"
           }
         ]
       }
     ]
 }
   ```
-- **path:** O caminho onde serão criados os arquivos. (É importante escapar as "\")
-- **projectName:** O nome do projeto é usado como base para o nome dos pacotes, arquivos e variaveis
-- **entities:**
-  - name: Nome da entidade
-  - fields: Além dos tipos primitivos, pode verificar outros tipos suportados em "src/main/resources/imports-mapping.json"
+### 📝 Parameters
 
-Obs: Ainda não é suportado tabelas utilizando chaves compostas
+- **`path`**:  
+  The absolute path where the project will be created. Make sure to escape backslashes (`\\`) on Windows.
 
-#### EN:
+- **`projectName`**:  
+  Used as the base for package names, class names, and variable names.
+
+- **`database`**:  
+  The target database. Supported options: `MONGODB`, `MYSQL`, `ELASTICSEARCH`.
+
+- **`entities`**:  
+  List of entity definitions, each with:
+  - `name`: Name of the entity
+  - `fields`: Field definitions including:
+    - `name`: Field name  
+    - `type`: Data type (primitives and supported custom types)
+    - `isSubEntity`: Marks the field as a Sub Entity (should be defined in the entity array latter)
+    - `isId` (optional): Marks the field as the ID
+
+💡 **Note**: For supported field types beyond primitives, check the mappings in  
+`src/main/resources/imports-mapping.json`.
+
+---
+
+## ⚠️ Limitations
+
+- Currently **does not** support composite primary keys.
+
+---
+
+## 📦 Technologies Used
+
+- Java 11+  
+- Spring Boot  
+- Spring Data JPA, MongoDB and Elasticsearch  
+- JavaParser
